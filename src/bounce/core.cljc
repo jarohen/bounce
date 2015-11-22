@@ -20,6 +20,12 @@
 (defn fmap-component [component f]
   (sys/-fmap-component component f))
 
+(defn with-component [component f]
+  (try
+    (f (sys/-value component))
+    (finally
+      (sys/-close! component))))
+
 (defn using [component dependencies]
   (cond
     (map? dependencies) (vary-meta component update ::deps merge dependencies)
