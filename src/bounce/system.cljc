@@ -1,11 +1,15 @@
 (ns bounce.system)
 
 (defprotocol IComponent
+  (-fmap-component [_ f])
   (-close! [_])
   (-value [_]))
 
 (defrecord Component [value close!]
   IComponent
+  (-fmap-component [this f]
+    (update this :value f))
+
   (-value [_] value)
   (-close! [_]
     (when close!

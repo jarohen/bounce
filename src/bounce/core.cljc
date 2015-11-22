@@ -1,7 +1,6 @@
 (ns bounce.core
   (:require [bounce.reresolve :as br]
             [bounce.system :as sys]
-            [bounce.watcher :as w]
             [clojure.set :as set]
             [clojure.tools.namespace.repl :as ctn]
             [com.stuartsierra.dependency :as deps]))
@@ -17,6 +16,9 @@
 
   ([value close!]
    (sys/->Component value close!)))
+
+(defn fmap-component [component f]
+  (sys/-fmap-component component f))
 
 (defn using [component dependencies]
   (cond
