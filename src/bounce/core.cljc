@@ -65,15 +65,16 @@
         (recur)))))
 
 (defn- close-system! [!system]
-  (boolean (loop []
-             (when-let [system @!system]
-               (let [close! (sys/-close-fn system)]
-                 (if (compare-and-set! !system system nil)
-                   (do
-                     (close!)
-                     true)
+  (when !system
+    (boolean (loop []
+               (when-let [system @!system]
+                 (let [close! (sys/-close-fn system)]
+                   (if (compare-and-set! !system system nil)
+                     (do
+                       (close!)
+                       true)
 
-                   (recur)))))))
+                     (recur))))))))
 
 (defn make-system
   ([system-map]
@@ -94,7 +95,8 @@
        (doseq [dep-id ordered-dep-ids]
          (satisfy! !new-system dep-id (try
                                         (let [component-fn (get system-map dep-id)]
-                                          (component-fn))
+                                          (or (component-fn)
+                                              (->component nil)))
 
                                         (catch Exception e
                                           (close-system! !new-system)
@@ -126,8 +128,7 @@
   (atom nil))
 
 (defn- !current-system []
-  (or *!system*
-      !system))
+  (or *!system* !system))
 
 (def ^:private !system-fn
   (atom nil))
@@ -179,13 +180,14 @@
 
 (defn ask [k & ks]
   (let [!system (!current-system)
-
         get-dep (loop []
-                  (let [system @!system
-                        {:keys [next-system get-dep]} (sys/-ask system k)]
-                    (if (compare-and-set! !system system next-system)
-                      get-dep
-                      (recur))))]
+                  (if-let [system @!system]
+                    (let [{:keys [next-system get-dep]} (sys/-ask system k)]
+                      (if (compare-and-set! !system system next-system)
+                        get-dep
+                        (recur)))
+
+                    (throw (ex-info "No system available." {}))))]
 
     (cond-> (get-dep)
       (seq ks) (get-in ks))))
