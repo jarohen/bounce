@@ -27,15 +27,7 @@
       (sys/-close! component))))
 
 (defn using [component dependencies]
-  (cond
-    (map? dependencies) (vary-meta component update ::deps merge dependencies)
-
-    (set? dependencies) (using component (->> (for [dep-id dependencies]
-                                                [dep-id dep-id])
-                                              (into {})))
-
-    :else (throw (ex-info "Dependencies must be a map or a set!"
-                          {:dependencies dependencies}))))
+  (vary-meta component update ::deps set/union dependencies))
 
 (defn- order-deps [dep-map {:keys [targets]}]
   (loop [g (deps/graph)
@@ -89,7 +81,7 @@
 
   ([system-map {:keys [targets]}]
    (let [ordered-dep-ids (-> (order-deps (->> (for [[dep-id dep] system-map]
-                                                [dep-id (set (vals (::deps (meta dep))))])
+                                                [dep-id (set (::deps (meta dep)))])
                                               (into {}))
                                          {:targets targets})
 
