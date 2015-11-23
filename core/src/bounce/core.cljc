@@ -104,24 +104,6 @@
 
        @!new-system))))
 
-;; -- System test/utility functions --
-
-(defn with-system
-  ([system f]
-   (with-system system {:close? true} f))
-
-  ([system {:keys [close?]} f]
-   (binding [*!system* (atom (if (satisfies? sys/ISystem system)
-                               system
-                               (sys/->system {:value system
-                                              :expected-dep-ids (keys system)})))]
-     (try
-       (f)
-
-       (finally
-         (when close?
-           (close-system! *!system*)))))))
-
 ;; -- REPL API --
 
 (def ^:private !system
@@ -191,3 +173,25 @@
 
     (cond-> (get-dep)
       (seq ks) (get-in ks))))
+
+;; -- System test/utility functions --
+
+(defn with-system
+  ([system f]
+   (with-system system {:close? true} f))
+
+  ([system {:keys [close?]} f]
+   (binding [*!system* (atom (if (satisfies? sys/ISystem system)
+                               system
+                               (sys/->system {:value system
+                                              :expected-dep-ids (keys system)})))]
+     (try
+       (f)
+
+       (finally
+         (when close?
+           (close-system! *!system*)))))))
+
+(defn with-vary-system [vary-fn f]
+  (let [system-value (snapshot)]
+    (with-system (vary-fn system-value) {:close? false} f)))
