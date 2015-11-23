@@ -1,0 +1,21 @@
+* Changelog
+** 0.0.x
+*** 0.0.3
+
+Breaking change: config opts to be passed under a ~:db-config~ key:
+
+#+BEGIN_SRC clojure
+  (with-db-pool {:db-config {:driver "org.postgresql.Driver"
+                             :subprotocol "postgresql"
+                             ...}}
+    (fn [db-pool]
+      ...
+      ))
+#+END_SRC
+*** 0.0.2
+
+Bugfix when closing pool, no breaking changes
+
+*** 0.0.1
+
+Initial release
