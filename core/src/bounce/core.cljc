@@ -27,7 +27,7 @@
       (sys/-close! component))))
 
 (defn using [component dependencies]
-  (vary-meta component update ::deps set/union dependencies))
+  (vary-meta component assoc ::deps dependencies))
 
 (defn- order-deps [dep-map {:keys [targets]}]
   (loop [g (deps/graph)
