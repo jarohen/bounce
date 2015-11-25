@@ -155,10 +155,14 @@
 
 ;; -- Getting hold of system values --
 
-(defn snapshot []
-  (some->> (!current-system)
-           deref
-           sys/-snapshot))
+(defn snapshot
+  ([]
+   (snapshot (some->> (!current-system)
+                      deref)))
+
+  ([system]
+   (some->> system
+            sys/-snapshot)))
 
 (defn ask [k & ks]
   (let [!system (!current-system)
