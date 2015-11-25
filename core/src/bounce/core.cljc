@@ -17,15 +17,6 @@
   ([value close!]
    (sys/->Component value close!)))
 
-(defn fmap-component [component f]
-  (sys/-fmap-component component f))
-
-(defn with-component [component f]
-  (try
-    (f (sys/-value component))
-    (finally
-      (sys/-close! component))))
-
 (defn using [component dependencies]
   (vary-meta component assoc ::deps dependencies))
 
@@ -199,3 +190,17 @@
 (defn with-vary-system [vary-fn f]
   (let [system-value (snapshot)]
     (with-system (vary-fn system-value) {:close? false} f)))
+
+(defn fmap-component [component f & args]
+  (sys/-fmap-component component #(apply f % args)))
+
+(defn fmap-component-fn [component-fn f & args]
+  (-> (fn []
+        (apply fmap-component (component-fn) f args))
+      (using (::deps (meta component-fn)))))
+
+(defn with-component [component f]
+  (try
+    (f (sys/-value component))
+    (finally
+      (sys/-close! component))))
