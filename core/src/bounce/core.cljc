@@ -155,7 +155,7 @@
    (some->> system
             sys/-snapshot)))
 
-(defn ask [k & ks]
+(defn ask [k]
   (let [!system (!current-system)
         get-dep (loop []
                   (if-let [system @!system]
@@ -166,8 +166,7 @@
 
                     (throw (ex-info "No system available." {}))))]
 
-    (cond-> (get-dep)
-      (seq ks) (get-in ks))))
+    (get-dep)))
 
 ;; -- System test/utility functions --
 
