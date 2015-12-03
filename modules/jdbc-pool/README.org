@@ -1,19 +1,19 @@
-* JDBC Pool - Yo-yo module
+* JDBC Pool - Bounce module
 
-This is a module to start a JDBC connection pool in a Yo-yo
+This is a module to start a JDBC connection pool in a Bounce
 system, based on [[http://commons.apache.org/proper/commons-dbcp/][Apache Commons DBCP2]].
 
 ** Dependency
 
 #+BEGIN_SRC clojure
-  [jarohen/yoyo.jdbc-pool "0.0.3"]
+  [jarohen/bounce.jdbc-pool "0.0.3"]
 #+END_SRC
 
 ** Usage
 
 #+BEGIN_SRC clojure
-  (:require [yoyo.core :as yc]
-            [yoyo.jdbc-pool :refer [with-db-pool]])
+  (:require [bounce.core :as yc]
+            [bounce.jdbc-pool :refer [with-db-pool]])
 
   (yc/ylet [...
             db-pool (with-db-pool {:db-config {:driver "org.postgresql.Driver" ; optional - we'll guess it if you don't specify one!

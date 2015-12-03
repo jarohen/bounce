@@ -1,16 +1,16 @@
-* Aleph - Yo-yo module
+* Aleph - Bounce module
 
 ** Dependency
 
 #+BEGIN_SRC clojure
-  [jarohen/yoyo.aleph "0.0.3"]
+  [jarohen/bounce.aleph "0.0.3"]
 #+END_SRC
 
 ** Usage
 
 #+BEGIN_SRC clojure
-  (:require [yoyo.aleph :as aleph]
-            [yoyo.core :as yc]
+  (:require [bounce.aleph :as aleph]
+            [bounce.core :as yc]
             [cats.core :as c])
 
   (defn make-handler [...]
