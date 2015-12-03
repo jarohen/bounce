@@ -11,14 +11,28 @@
   nil)
 
 (defn ->component
+  "Creates a close-able component, with an optional close function."
+
   ([value]
    (->component value nil))
 
   ([value close!]
    (sys/->Component value close!)))
 
-(defn using [component dependencies]
-  (vary-meta component assoc ::deps dependencies))
+(defn using
+  "Accepts a component function (a 0-arg function returning a component) and a
+  set of dependencies, and returns an augmented component function with the
+  declared dependencies.
+
+   Usage:
+
+   (-> (fn []
+         (->component ... (fn [] ...)))
+       (using #{:db-conn :config}))"
+
+  [component-fn dependencies]
+
+  (vary-meta component-fn assoc ::deps dependencies))
 
 (defn- order-deps [dep-map {:keys [targets]}]
   (loop [g (deps/graph)
@@ -68,6 +82,28 @@
                      (recur))))))))
 
 (defn make-system
+  "Starts a system from the given system map, returning a system value that can be closed.
+
+   Accepts a map, from a component key to a 0-arg function returning a component. (The component can then be wrapped in a call to 'using')
+
+   Usage:
+   (require '[bounce.core :as bc])
+
+   (bc/make-system {:config (fn []
+                              (->component (read-config ...)))
+
+                    :db-conn (-> (fn []
+                                   (let [db-config (:db (bc/ask :config))
+                                         db-conn (open-db-conn! db-config)]
+                                     (bc/->component db-conn (fn []
+                                                            (close-db-conn! db-conn)))))
+
+                                 (bc/using #{:config}))
+
+                    :web-server (-> (fn []
+                                      ...)
+                                    (bc/using #{:config :db-conn}))})"
+
   ([system-map]
    (make-system system-map {:targets (keys system-map)}))
 
@@ -106,26 +142,42 @@
 (def ^:private !system-fn
   (atom nil))
 
-(defn set-system-fn! [system-fn]
+(defn set-system-fn!
+  "Expects a 0-arg function returning a system, setting it as the function used
+  to create a system when `start!` or `reload!` are called."
+  [system-fn]
   (reset! !system-fn (br/with-reresolve system-fn)))
 
-(defn start! []
-  (assert (nil? @!system) "System already started!")
+(defn start!
+  "REPL function - starts a system by calling the previously set system-fn.
 
-  (if-let [system-fn @!system-fn]
-    (let [new-system (system-fn)]
-      (when-not (satisfies? sys/ISystem new-system)
-        (throw (ex-info "Expecting a system, got" {:type (type new-system)
-                                                   :system new-system})))
+   If there is already a system running, this is a no-op"
+  []
+  (when-not @!system
+    (if-let [system-fn @!system-fn]
+      (let [new-system (system-fn)]
+        (when-not (satisfies? sys/ISystem new-system)
+          (throw (ex-info "Expecting a system, got" {:type (type new-system)
+                                                     :system new-system})))
 
-      (boolean (reset! !system new-system)))
+        (boolean (reset! !system new-system)))
 
-    (throw (ex-info "Please set a Bounce system-var!" {}))))
+      (throw (ex-info "Please set a Bounce system-fn!" {})))))
 
-(defn stop! []
+(defn stop!
+  "REPL function - stops the running system.
+
+   If there is no system started, this is a no-op."
+  []
   (close-system! !system))
 
 (defn reload!
+  "REPL function - reloads the running system.
+
+   Optional parameters (CLJ only):
+   - refresh?     :- Refreshes any namespaces that have changed, using clojure.tools.namespace
+   - refresh-all? :- Refreshes all namespaces."
+
   ([]
    (reload! {}))
 
@@ -147,6 +199,9 @@
 ;; -- Getting hold of system values --
 
 (defn snapshot
+  "Returns the value of the given system.
+
+   If no system is provided, uses the current running system"
   ([]
    (snapshot (some->> (!current-system)
                       deref)))
@@ -155,7 +210,20 @@
    (some->> system
             sys/-snapshot)))
 
-(defn ask [k]
+(defn ask
+  "Asks for the component value under the provided key 'k' in the current system.
+
+   If the component has not yet been started:
+
+   - If the value is immediately available, it will be returned
+   - If the value is not immediately available, and this function is called on the same thread as the system is being started, it means that we've got an invalid dependency order, so this function will throw an error.
+   - If the value is not immediately available, and this function is called on a different thread, then it will be being started concurrently, so:
+     - If we're in Clojure, this function will block waiting on the value.
+     - If we're in CLJS, we can't block, so this function will throw an error.
+     - If we're blocking, and creating the requested value fails, this function will throw an error.
+
+  If 'ks' are provided, they will be looked up as a nested path in the resulting value, like 'get-in'"
+  [k & ks]
   (let [!system (!current-system)
         get-dep (loop []
                   (if-let [system @!system]
@@ -166,11 +234,16 @@
 
                     (throw (ex-info "No system available." {}))))]
 
-    (get-dep)))
+    (-> (get-dep)
+        (get-in ks))))
 
 ;; -- System test/utility functions --
 
 (defn with-system
+  "Runs the given function, in the context of the provided system.
+
+   Optionally, takes a parameter that determines whether this function will
+   close the system afterwards (defaults to true)"
   ([system f]
    (with-system system {:close? true} f))
 
@@ -186,19 +259,52 @@
          (when close?
            (close-system! *!system*)))))))
 
-(defn with-vary-system [vary-fn f]
+(defn with-vary-system
+  "Varies the system context for the duration of the function.
+
+   Usage:
+   (with-vary-system #(assoc-in % [:config :db-config :db] \"test\")
+     (fn []
+       ;; => \"test\"
+       (println (bc/ask :config :db-config :db))))"
+  [vary-fn f]
   (let [system-value (snapshot)]
     (with-system (vary-fn system-value) {:close? false} f)))
 
-(defn fmap-component [component f & args]
+(defn fmap-component
+  "Updates the given component using the given function (and extra args, if provided)
+
+   Usage:
+
+   (fmap-component ... assoc :key :value)"
+  [component f & args]
   (sys/-fmap-component component #(apply f % args)))
 
-(defn fmap-component-fn [component-fn f & args]
+(defn fmap-component-fn
+  "Updates the given component using the given function (and extra args, if provided)
+
+   Usage:
+
+   (defn db-conn-component []
+     (-> (fn []
+           (let [db-conn (open-db-conn! (bc/ask :config :db))]
+             (->component db-conn (fn []
+                                    (close-db-conn! db-conn)))))
+         (bc/using #{:config})))
+
+   (fmap-component-fn (db-conn-component) #(update % ...))"
+
+  [component-fn f & args]
+
   (-> (fn []
         (apply fmap-component (component-fn) f args))
       (using (::deps (meta component-fn)))))
 
-(defn with-component [component f]
+(defn with-component
+  "Runs the provided function, passing it the value of the component. When the
+  function returns, the component is closed."
+  [component f]
+
   (try
     (f (sys/-value component))
     (finally
