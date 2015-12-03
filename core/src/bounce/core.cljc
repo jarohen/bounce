@@ -2,7 +2,7 @@
   (:require [bounce.reresolve :as br]
             [bounce.system :as sys]
             [clojure.set :as set]
-            [clojure.tools.namespace.repl :as ctn]
+            #?(:clj [clojure.tools.namespace.repl :as ctn])
             [com.stuartsierra.dependency :as deps]))
 
 ;; -- Creating a system --
