@@ -10,7 +10,7 @@
 
   Usage:
     (require '[bounce.aleph :refer [start-server!]]
-             '[bounce.core :as yc])
+             '[bounce.core :as bc])
 
     (bc/with-component (start-server! {...})
       (fn [server-opts]
