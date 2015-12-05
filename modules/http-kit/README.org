@@ -1,0 +1,30 @@
+* HTTP-kit - Bounce module
+** Dependency
+
+#+BEGIN_SRC clojure
+  [jarohen/bounce.http-kit "0.0.1"]
+#+END_SRC
+
+** Usage
+
+#+BEGIN_SRC clojure
+  (:require [bounce.http-kit :as http]
+            [bounce.core :as bc])
+
+  (defn make-handler [...]
+    (routes
+      (GET "/" []
+        ...)))
+
+  ;; when you're making your system:
+
+  (defn make-system []
+    {:server (-> (fn []
+                   (http/start-server! {:handler (make-handler ...)
+                                        :server-opts {:port ...
+                                                      ...}}))
+
+                 (bc/using #{...}))})
+
+
+#+END_SRC
