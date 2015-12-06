@@ -1,0 +1,51 @@
+* Bounce
+
+Bounce is a lightweight library for structuring dependencies in a
+functional style, for Clojure and ClojureScript.
+
+** Dependency
+#+BEGIN_SRC clojure
+  [jarohen/bounce "0.0.1-SNAPSHOT"]
+#+END_SRC
+
+There will likely be many breaking changes until 0.1.0!
+
+(There are a couple of Lein templates - 'bounce-webapp' and
+'bounce-api' - but here follows a fuller explanation!)
+
+** Concepts in Bounce
+
+There are two main concepts in Bounce - Components and Systems
+
+*** Components
+
+Components in Bounce are any values that can be 'closed'. Examples
+here are resources that can be released, servers that can be shut
+down, or database pools that can be closed.
+
+Components are simply pairs consisting of a value, and a function that
+will 'close' that value. They're constructed using
+~bounce.core/->component~, a function taking either 1 or 2 args - the
+value and, optionally, the function to close that value.
+
+#+BEGIN_SRC clojure
+  (require '[bounce.core :as bc])
+
+  (defn open-db-pool! [db-config]
+    (let [db-pool (start-db-pool! db-config)]
+      (bc/->component db-pool
+                      (fn []
+                        (stop-db-pool! db-pool)))))
+#+END_SRC
+
+(There is, of course, a predefined Bounce component that does exactly
+this, in the Bounce [[https://github.com/jarohen/bounce/tree/master/modules/jdbc-pool][JDBC pool module]].)
+
+Notably, components in Bounce are always 'started' - there's no
+uninitialised state.
+
+*** Systems
+
+Systems, in Bounce, are a composition of components.
+
+*** 'Asking' for dependencies
