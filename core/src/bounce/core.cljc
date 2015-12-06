@@ -143,10 +143,20 @@
   (atom nil))
 
 (defn set-system-fn!
-  "Expects a 0-arg function returning a system, setting it as the function used
-  to create a system when `start!` or `reload!` are called."
+  "Expects a 0-arg function that returns a system, or a var or a fully
+  qualified symbol referencing such a function, setting it as the
+  function used to create a system when `start!` or `reload!` are
+  called."
   [system-fn]
   (reset! !system-fn (br/with-reresolve system-fn)))
+
+(defn set-system-map-fn!
+  "Expects a 0-arg function that returns a system map, or a var or a
+  fully qualified symbol referencing such a function, setting it as
+  the function used to create a system when `start!` or `reload!` are
+  called."
+  [system-map-fn]
+  (set-system-fn! (comp make-system (br/with-reresolve system-map-fn))))
 
 (defn start!
   "REPL function - starts a system by calling the previously set system-fn.
