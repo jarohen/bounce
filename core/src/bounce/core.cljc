@@ -125,7 +125,7 @@
                                           (or (component-fn)
                                               (->component nil)))
 
-                                        (catch Exception e
+                                        (catch #?(:clj Exception, :cljs js/Error) e
                                           (close-system! !new-system)
                                           (throw e)))))
 
