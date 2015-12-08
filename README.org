@@ -10,8 +10,65 @@ functional style, for Clojure and ClojureScript.
 
 There will likely be many breaking changes until 0.1.0!
 
-(There are a couple of Lein templates - 'bounce-webapp' and
-'bounce-api' - but here follows a fuller explanation!)
+(There will eventually be a couple of Lein templates - 'bounce-webapp'
+and 'bounce-api' - but here follows a fuller explanation!)
+
+** What is Bounce looking to achieve?
+
+Before writing Bounce, myself and a number of colleagues were
+discussing what we'd look for in such a library. Most of us had
+written [[https://github.com/stuartsierra/component][Component]]-based systems, and we had a [[https://github.com/jarohen/yoyo][Yoyo-based]] system that
+wasn't as simple as we'd hoped, so it was time to look for/write an
+alternative. We concluded that it should:
+
+1. Allow the developer to start a component-based system, specifying the
+   inter-dependencies of the components.
+2. Allow the developer to start/stop/reload the system quickly.
+3. Allow the developer to refer to any of those components easily from
+   within other code (i.e. without having to modify the whole caller
+   stack if a function's dependencies changed)
+4. Allow the developer to introspect/validate the current state of the
+   system easily.
+5. Allow the developer to swap out any of the components for testing
+   purposes.
+6. Prefer vanilla functions over protocols/records, where
+   possible. Especially, we wanted to avoid the property of the
+   Component library whereby components have a 'pre-started' state,
+   where it exists but hasn't been fully initialised.
+
+Normally, in functional code, we look for (amongst other things) the
+property of referential transparency - that the output of any given
+function depends simply on its declared inputs (i.e. without
+referencing or affecting any other variables).
+
+In particular, this helps with composability (because each function
+can be re-used without needing to replicate the context in which it
+was called) and testing (because the context in which a function is
+called can be altered for testing purposes)
+
+If we were to adopt this principle above all others, it generally
+means one of three patterns pervading through the codebase:
+
+1. Each function provides the dependencies of any of its callees. This
+   means each function declaring as inputs the union of all of the
+   dependencies of its callees, and passing them down as necessary - a
+   fair bit of boilerplate. When a new dependency is required, the
+   whole call-stack must be updated - not good!
+2. Each function accepts the whole system map, pulls out the
+   dependencies it needs, and passes it down unaltered to the callees
+   that require it. While this is simpler, it means that we lose the
+   explicit information about which function depends on what - only
+   that each function depends on the whole system. It also means
+   another parameter to nearly every function, and altering the whole
+   call-stack if a function that didn't previously have any
+   dependencies now does.
+3. Monads - this is the principle behind [[https://github.com/jarohen/yoyo][Yoyo]], and is explained
+   further in its own documentation. In practice, though, this turned
+   out to be viral (not to mention a distinct pain in a certain part
+   of the body) - as soon as one function needed to return a monadic
+   value, it meant changing a lot of the call-stack.
+
+
 
 ** Concepts in Bounce
 
