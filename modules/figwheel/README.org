@@ -25,14 +25,13 @@ In your system:
 
                                                            :web-context-path "/js"
 
-                                                           :main myapp.ui.app
-
                                                            :externs [...]
 
                                                            :figwheel {:server {:css-dirs ["/tmp/project/css"]}
                                                                       :client {:on-jsload "example.app/reload!"}}
 
-                                                           :dev {:optimizations :none
+                                                           :dev {:main myapp.ui.app
+                                                                 :optimizations :none
                                                                  :pretty-print? true}
 
                                                            :build {:optimizations :advanced

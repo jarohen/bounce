@@ -5,13 +5,12 @@
   {:source-paths ["ui-src"]
    :target-path "target/cljs/"
 
-   :main '{{name}}.ui.app
-
    :web-context-path "/js"
 
    :figwheel {:client {:on-jsload "{{name}}.ui.app/render-page!"}}
 
-   :dev {:optimizations :none
+   :dev {:main '{{name}}.ui.app
+         :optimizations :none
          :pretty-print? true}
 
    :build {:optimizations :advanced
