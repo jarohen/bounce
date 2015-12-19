@@ -82,7 +82,13 @@
 
      (.getPath (io/file output-dir "mains")))))
 
-(defn- watch-cljs! [{:keys [source-paths figwheel-options] :as cljs-opts}]
+(defn- wrap-no-cache [handler]
+  (fn [req]
+    (when-let [resp (handler req)]
+      (-> resp
+          (assoc-in [:headers "cache-control"] "must-revalidate")))))
+
+(defn- watch-cljs! [{:keys [source-paths] :as cljs-opts}]
   (assert-cljs
    (let [{:keys [target-path web-context-path], :as cljs-opts} (-> cljs-opts
                                                                    (merge (:dev cljs-opts))
@@ -90,10 +96,11 @@
 
      (log/infof "Watching CLJS directories %s..." source-paths)
 
-     (let [figwheel-system (-> (fs/create-figwheel-system {:figwheel-options figwheel-options
+     (let [figwheel-system (-> (fs/create-figwheel-system {:figwheel-options (get-in cljs-opts [:figwheel :server])
                                                            :all-builds [{:id "bounce"
                                                                          :source-paths source-paths
-                                                                         :figwheel {:build-id "bounce"}
+                                                                         :figwheel (merge {:build-id "bounce"}
+                                                                                          (get-in cljs-opts [:figwheel :client]))
                                                                          :build-options cljs-opts}]
                                                            :build-ids #{"bounce"}})
                                (c/start-system))]
@@ -115,12 +122,6 @@
                        (fn []
                          (c/stop-system figwheel-system)
                          (log/info "Stopped watching CLJS.")))))))
-
-(defn- wrap-no-cache [handler]
-  (fn [req]
-    (when-let [resp (handler req)]
-      (-> resp
-          (assoc-in [:headers "cache-control"] "no-cache")))))
 
 (defn- pre-built-cljs-compiler [{:keys [web-context-path] :as cljs-opts}]
   (log/info "Using pre-built CLJS")

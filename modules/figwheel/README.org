@@ -27,7 +27,8 @@ In your system:
 
                                                            :externs [...]
 
-                                                           :figwheel-options {:css-dirs ["/tmp/project/css"]}
+                                                           :figwheel {:server {:css-dirs ["/tmp/project/css"]}
+                                                                      :client {:on-jsload "example.app/reload!"}}
 
                                                            :dev {:optimizations :none
                                                                  :pretty-print? true}
