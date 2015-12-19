@@ -13,7 +13,8 @@
   (cljs-repl [_]))
 
 (try
-  (require '[cljs.closure :as cljs]
+  (require '[cljs.build.api :as cljs]
+           '[cljs.closure :as closure]
            '[cljs.env :as cljs-env]
            '[figwheel-sidecar.system :as fs]
            '[com.stuartsierra.component :as c])
@@ -53,12 +54,12 @@
    (assert (not-empty source-paths) "Please provide some source-paths!")
 
    (let [start-time (System/nanoTime)
-         cljs-compilable (reify cljs/Compilable
+         cljs-compilable (reify closure/Compilable
                            (-compile [_ opts]
-                             (mapcat #(cljs/-compile % opts) source-paths))
+                             (mapcat #(closure/-compile % opts) source-paths))
 
                            (-find-sources [_ opts]
-                             (mapcat #(cljs/-find-sources % opts) source-paths)))]
+                             (mapcat #(closure/-find-sources % opts) source-paths)))]
 
      (log/infof "Compiling CLJS, from %s to '%s'..." source-paths target-path)
 
