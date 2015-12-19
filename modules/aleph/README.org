@@ -3,7 +3,7 @@
 ** Dependency
 
 #+BEGIN_SRC clojure
-  [jarohen/bounce.aleph "0.0.1-SNAPSHOT"]
+  [jarohen/bounce.aleph "0.0.1-alpha1"]
 #+END_SRC
 
 ** Usage

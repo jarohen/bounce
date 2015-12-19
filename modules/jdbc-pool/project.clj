@@ -1,4 +1,4 @@
-(defproject jarohen/bounce.jdbc-pool "0.0.1-SNAPSHOT"
+(defproject jarohen/bounce.jdbc-pool "0.0.1-alpha1"
   :description "A module to set up a JDBC connection pool in Bounce"
   :url "https://github.com/james-henderson/bounce"
 
@@ -6,7 +6,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [jarohen/bounce "0.0.1-20151122.161749-3"]
+                 [jarohen/bounce "0.0.1-alpha1"]
                  [org.clojure/tools.logging "0.3.1"]
 
                  [org.clojure/java.jdbc "0.3.5"]

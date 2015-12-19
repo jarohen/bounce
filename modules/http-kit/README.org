@@ -2,7 +2,7 @@
 ** Dependency
 
 #+BEGIN_SRC clojure
-  [jarohen/bounce.http-kit "0.0.1"]
+  [jarohen/bounce.http-kit "0.0.1-alpha1"]
 #+END_SRC
 
 ** Usage

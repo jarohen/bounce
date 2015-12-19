@@ -1,4 +1,4 @@
-(defproject jarohen/bounce.figwheel "0.0.1-SNAPSHOT"
+(defproject jarohen/bounce.figwheel "0.0.1-alpha1"
   :description "A module to automatically re-compile ClojureScript files within a Bounce system."
   :url "https://github.com/james-henderson/bounce"
 
@@ -9,7 +9,7 @@
 
                  [bidi "1.21.1"]
 
-                 [jarohen/bounce "0.0.1-20151208.152024-7"]
+                 [jarohen/bounce "0.0.1-alpha1"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.clojure/tools.logging "0.3.1"]]
 

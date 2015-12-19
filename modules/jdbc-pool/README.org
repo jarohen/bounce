@@ -6,7 +6,7 @@ system, based on [[http://commons.apache.org/proper/commons-dbcp/][Apache Common
 ** Dependency
 
 #+BEGIN_SRC clojure
-  [jarohen/bounce.jdbc-pool "0.0.1-SNAPSHOT"]
+  [jarohen/bounce.jdbc-pool "0.0.1-alpha1"]
 #+END_SRC
 
 ** Usage
