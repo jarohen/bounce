@@ -9,7 +9,8 @@
   (bidi-routes [_])
   (cljs-handler [_])
   (path-for-js [_])
-  (path-for-module [_ module]))
+  (path-for-module [_ module])
+  (cljs-repl [_]))
 
 (try
   (require '[cljs.closure :as cljs]
@@ -117,7 +118,10 @@
                            (format "%s/mains/main.js" web-context-path))
 
                          (path-for-module [_ module]
-                           (format "%s/mains/modules/%s.js" web-context-path (name module))))
+                           (format "%s/mains/modules/%s.js" web-context-path (name module)))
+
+                         (cljs-repl [_]
+                           (fs/cljs-repl (:figwheel-system figwheel-system))))
 
                        (fn []
                          (c/stop-system figwheel-system)

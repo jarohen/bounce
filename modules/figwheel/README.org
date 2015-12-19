@@ -11,6 +11,8 @@ within a Bounce system.
 
 ** Usage
 
+*** Starting the compiler
+
 In your system:
 
 #+BEGIN_SRC clojure
@@ -43,11 +45,6 @@ The CLJS module handles the =:output-to= and =:output-dir= etc keys
 for you - simply specify a =:target-path=, and the CLJS component will
 ensure a consistent directory structure under that.
 
-Clojurescript's 'modules' allow you to split out your CLJS code into
-multiple entry points, by defining 'main' namespaces, so that you
-don't have to serve up all of your CLJS to each page, if you don't
-need to.
-
 The CLJS module also expects =:dev= and =:build= configuration
 maps. The =:dev= map is used for normal interactive development - in
 this example, it doesn't use any CLJS optimizations, so that your CLJS
@@ -58,6 +55,8 @@ when your project is built (uberjar'd). In this case, we can use
 =:advanced= optimization, to minify the compiled JS and speed up
 download times. The =:classpath-prefix=, in this case, is where the
 compiler will put the compiled JS files in the built JAR.
+
+*** In your web handler
 
 The CLJS compiler also provides a number of functions, that you can
 use in your own handler:
@@ -90,33 +89,42 @@ Your handler might, therefore, look something like this:
               [compojure.core :refer [routes GET]]
               [hiccup.core :refer [include-js]]
               [hiccup.page :refer [html5]]
-              [bounce.cljs :as cljs]))
+              [bounce.core :as bc]
+              [bounce.figwheel :as cljs]))
 
-  (defn handle-page [req cljs-compiler]
+  (defn handle-page [req]
     (html5
      [:head
       [:title ...]
 
-      (include-js (cljs/path-for-js cljs-compiler))
+      (include-js (cljs/path-for-js (bc/ask :cljs-compiler)))
       ...]
 
      [:body
       ...]))
 
-  (defn make-handler [{:keys [cljs-compiler]}]
+  (defn make-handler []
     ;; e.g. Compojure
     (routes
       (GET "/" {:as req}
-        (handle-page req cljs-compiler))
+        (handle-page req))
 
-      (cljs/cljs-handler cljs-compiler))
+      (cljs/cljs-handler (bc/ask :cljs-compiler)))
 
     ;; e.g. Bidi
     (make-handler ["" [{"/" {:get :page-handler}}
-                       (cljs/bidi-routes cljs-compiler)]]
+                       (cljs/bidi-routes (bc/ask :cljs-compiler))]]
 
                   (some-fn {:page-handler (fn [req]
-                                            (handle-page req cljs-compiler))}
+                                            (handle-page req))}
 
                            #(when (fn? %) %))))
+#+END_SRC
+
+*** CLJS REPL
+
+You can access the Figwheel CLJS REPL using ~bounce.figwheel/cljs-repl~, as follows:
+
+#+BEGIN_SRC clojure
+  (bounce.figwheel/cljs-repl (bc/ask :cljs-compiler))
 #+END_SRC
