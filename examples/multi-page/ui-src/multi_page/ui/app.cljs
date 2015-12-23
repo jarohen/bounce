@@ -7,13 +7,10 @@
 
 (enable-console-print!)
 
-(defn page-component []
-  (or (when-let [root-component @(r/cursor (bc/ask :!app) [::root-component])]
-        [root-component])
-      [:div]))
-
 (defn render-page! []
-  (r/render-component [page-component] js/document.body))
+  (r/render-component [(fn []
+                         [@(r/cursor (bc/ask :!app) [::root-component])])]
+                      js/document.body))
 
 (defn home-page [{:keys [!count]}]
   [:div
@@ -45,7 +42,9 @@
    :router (-> (fn []
                  (mux/make-router {:token-mapper (mux.bidi/token-mapper ["" {"/" ::home-page
                                                                              "/page-two" {["/" :id] ::page-two}}])
-                                   :listener #(reset! (r/cursor (bc/ask :!app) [::root-component]) %)
+                                   :listener (fn [{:keys [location page]}]
+                                               (reset! (r/cursor (bc/ask :!app) [:location]) location)
+                                               (reset! (r/cursor (bc/ask :!app) [::root-component]) page))
 
                                    :default-location {:handler ::home-page}
 
@@ -78,7 +77,7 @@
                                    (fn []
                                      (r/unmount-component-at-node js/document.body))))
 
-                 (bc/using #{:!app}))})
+                 (bc/using #{:!app :router}))})
 
 (set! (.-onload js/window)
       (fn []

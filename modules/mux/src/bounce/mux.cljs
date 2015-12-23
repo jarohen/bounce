@@ -41,7 +41,8 @@
                       (let [new-page (new-page-fn (merge old-location
                                                          {:same-handler? same-handler?}))]
                         (reset! !current-page new-page)
-                        (listener (p/-value new-page))))
+                        (listener {:location new-location
+                                   :page (p/-value new-page)})))
 
                     (js/console.warn "Can't find new handler:" (pr-str new-location))))))]
 
