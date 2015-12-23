@@ -30,6 +30,7 @@
                                                     (if (compare-and-set! !current-location old-location new-location)
                                                       [old-location new-location]
                                                       (recur))))]
+
                 (when (not= old-location new-location)
                   (if-let [new-page-fn (get pages (:handler new-location))]
                     (let [same-handler? (= (:handler old-location) (:handler new-location))]
@@ -46,11 +47,17 @@
 
       (e/listen history h/EventType.NAVIGATE
                 (fn [e]
-                  (let [token (.-token e)
-                        location (if-not (s/blank? token)
-                                   token
-                                   (or (location->token token-mapper default-location) "/"))]
-                    (on-change (token->location token-mapper location)))))
+                  (let [token (or (let [token (.-token e)]
+                                    (when-not (s/blank? token)
+                                      token))
+
+                                  (location->token token-mapper default-location)
+
+                                  "/")]
+
+                    (if-let [location (token->location token-mapper token)]
+                      (on-change location)
+                      (js/console.warn "Invalid location: " (pr-str {:token token}))))))
 
       (.setEnabled history true)
 
