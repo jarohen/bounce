@@ -1,4 +1,10 @@
-(defproject jarohen/bounce.examples.todomvc ""
+(defproject multi-page ""
+
+  :description "FIXME: write description"
+  :url "http://example.com/FIXME"
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
+
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/tools.reader "0.9.2"]
                  [jarohen/embed-nrepl "0.1.7"]
@@ -11,8 +17,6 @@
                  [hiccup "1.0.5"]
                  [garden "1.2.1"]
                  [ring-middleware-format "0.5.0" :exclusions [ring]]
-
-                 [traversy "0.4.0"]
 
                  [org.webjars/jquery "2.1.4"]
                  [org.webjars/bootstrap "3.3.5"]
@@ -36,8 +40,8 @@
 
   :filespecs [{:type :path, :path "target/cljs/build/mains"}]
 
-  :aliases {"dev" ["run" "-m" "todomvc.service.main"]
+  :aliases {"dev" ["run" "-m" "multi-page.service.main"]
             "build" ["do"
                      "clean"
-                     ["run" "-m" "todomvc.service.main/build!"]
+                     ["run" "-m" "multi-page.service.main/build!"]
                      "uberjar"]})

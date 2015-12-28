@@ -3,26 +3,46 @@
             [todomvc.ui.events :as events]
             [todomvc.ui.view :as view]
             [bounce.core :as bc]
+            [bounce.mux :as mux]
+            [bounce.mux.bidi :as mux.bidi]
             [clojure.string :as s]
             [reagent.core :as r]))
 
 (enable-console-print!)
 
-(defn page-component []
-  (let [!todo-controller (doto (r/cursor (model/!app) [::events/todo-controller])
-                           (events/mount-todo-list!))]
-    (fn []
-      [view/todo-list (events/todo-list-controller !todo-controller)])))
-
 (defn render-page! []
-  (r/render-component [page-component] js/document.body))
+  (r/render-component [(fn []
+                         [@(r/cursor (bc/ask :!app) [::root-component])])]
+                      js/document.body))
 
 (defn make-bounce-map []
-  (model/app-state-system-map))
+  {:!app (fn []
+           (bc/->component (r/atom (model/initial-state))))
+
+   :router (-> (fn []
+                 (mux/make-router {:token-mapper (mux.bidi/token-mapper ["" {"/" ::todos}])
+                                   :listener (fn [{:keys [location page]}]
+                                               (reset! (r/cursor (bc/ask :!app) [:location]) location)
+                                               (reset! (r/cursor (bc/ask :!app) [::root-component]) page))
+
+                                   :default-location {:handler ::todos}
+
+                                   :pages {::todos (fn [{:keys [old-location new-location same-handler?]}]
+                                                     (when-not same-handler?
+                                                       (events/mount-todo-list!))
+
+                                                     (mux/->page (fn []
+                                                                   [view/todo-list (events/todo-list-controller)])))}}))
+               (bc/using #{:!app}))
+
+   :renderer (-> (fn []
+                   (bc/->component (render-page!)
+                                   (fn []
+                                     (r/unmount-component-at-node js/document.body))))
+
+                 (bc/using #{:!app :router}))})
 
 (set! (.-onload js/window)
       (fn []
         (bc/set-system-map-fn! make-bounce-map)
-        (bc/start!)
-
-        (render-page!)))
+        (bc/start!)))
