@@ -7,7 +7,73 @@
 
   (:import [goog.history Html5History]))
 
-(defn make-router [{:keys [token-mapper listener pages default-location]}]
+(defn make-router
+  "Makes a Router Bounce component - to be passed to the other
+  functions in this namespace.
+
+  When the browser history changes, the following happens:
+
+  1. The token mapper is asked to translate the token to a new
+  location (i.e. handler, route-params and query-params)
+
+  2. The current page's unmount-fn is called (most of these check
+  'same-handler?' to see whether they _actually_ need to unmount)
+
+  3. We get the new page fn out of the pages map, and call
+  it. (Likewise, it checks 'same-handler?' to see what it needs to
+  mount.) It returns a Page (pair of 'page value' and unmount-fn) by
+  calling mux/->page.
+
+  4. 'listener' is called with the new location and the page value.
+
+  Parameters:
+
+  token-mapper :: bounce.mux.protocols/TokenMapper (see bounce.mux.bidi for an example implementation)
+  listener :: ({:keys [location page]} -> ())
+  default-location :: location
+  pages :: {handler-key -> ({:keys [old-location new-location same-handler?]} -> Page)}
+
+  Usage:
+
+  (require '[bounce.core :as bc]
+           '[bounce.mux :as mux]
+           '[bounce.mux.bidi :as mux.bidi]
+           '[reagent.core :as r])
+
+  (defn make-system-map []
+    {:!app (fn []
+             (bc/->component (r/atom {})))
+
+     :router (-> (fn []
+                   (mux/make-router {:token-mapper (mux.bidi/token-mapper [\"\" {\"/\" ::home-page
+                                                                               ...}])
+                                     :listener (fn [{:keys [location page]}]
+                                                 (reset! (r/cursor (bc/ask :!app) [:location]) location)
+                                                 (reset! (r/cursor (bc/ask :!app) [::root-component]) page))
+
+                                     :default-location {:handler ::home-page}
+
+                                     :pages {::home-page (fn [{:keys [old-location new-location same-handler?]}]
+                                                           (when-not same-handler?
+                                                             ;; mount!
+                                                             )
+
+                                                           (mux/->page (fn []
+                                                                         [home-page-view])
+
+                                                                       (fn [{:keys [old-location new-location same-handler?]}]
+                                                                         (when-not same-handler?
+                                                                           ;; unmount!
+                                                                           ))))
+
+                                             ...}}))
+                 (bc/using #{:!app}))
+
+     ...})
+
+  "
+  [{:keys [token-mapper listener pages default-location]}]
+
   (let [history (doto (Html5History.)
                   (.setUseFragment false)
                   (.setPathPrefix ""))
@@ -75,17 +141,49 @@
                         (.removeAllListeners history))))))
 
 (defn ->page
+  "Given a value, and (optionally) an unmount-fn, returns a 'Page'
+  pair, to be returned from the :pages map for 'make-router'
+
+  value :: a
+  unmount-fn :: ({:keys [old-location new-location same-handler?]} -> ())
+
+  same-handler? is a convenience value - it's true iff the handler
+  hasn't changed from old-location to new-location. Equivalent
+  to (= (:handler old-location) (:handler new-location))."
+
   ([value]
-   (->page value (fn [])))
+   (->page value (fn [{:keys [old-location new-location same-handler?]}])))
 
   ([value unmount-fn]
    (p/->Page value unmount-fn)))
 
-(defn link [router location]
+(defn link
+  "Generates an <a> tag properties map for the given location.
+
+  Will intercept a left click, and set the history token.
+
+  Will ignore ctrl/alt/super/shift-clicks, and defer to the browser
+  default behaviour (new tab/save page, usually)
+
+  Usage:
+
+  [:a (merge (mux/link {:handler ...
+                        :route-params {...}
+                        :query-params {...}})
+             {:other \"properties\"})]
+  "
+  [router location]
+
   (p/-link router location))
 
-(defn set-location! [router location]
+(defn set-location!
+  "Sets the History location to the given location"
+  [router location]
+
   (p/-set-location! router location))
 
-(defn replace-location! [router location]
+(defn replace-location!
+  "Replaces the current History location with the given location"
+  [router location]
+
   (p/-replace-location! router location))
