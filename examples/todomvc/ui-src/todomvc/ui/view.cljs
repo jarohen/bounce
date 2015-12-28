@@ -9,14 +9,14 @@
       (f e)
       (.preventDefault e))))
 
-(defn new-todo-widget [{:keys [save-new-todo! !new-caption] :as handlers}]
+(defn new-todo-view [{:keys [save-new-todo! !new-caption] :as handlers}]
   [:input#new-todo {:placeholder "What needs to be done?"
                     :type "text"
                     :value @!new-caption
                     :on-change #(reset! !new-caption (.. % -target -value))
                     :on-key-down (on-enter save-new-todo!)}])
 
-(defn toggle-all-widget [{:keys [set-all-done!]}]
+(defn toggle-all-view [{:keys [set-all-done!]}]
   (let [all-done? (every? :done? (vals @(model/!todos)))]
     [:input#toggle-all {:type "checkbox"
                         :checked all-done?
@@ -87,10 +87,10 @@
   [:section#todoapp
    [:header#header
     [:h1 "todos"]
-    [new-todo-widget handlers]]
+    [new-todo-view handlers]]
 
    [:section#main
-    [toggle-all-widget handlers]
+    [toggle-all-view handlers]
     [:label {:for "toggle-all"}
      "Mark all as complete"]
 
