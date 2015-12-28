@@ -2,7 +2,7 @@
   (:require [bounce.figwheel :as cljs]))
 
 (def cljs-config
-  {:source-paths ["ui-src" "../../modules/mux/src"]
+  {:source-paths ["ui-src"]
    :target-path "target/cljs/"
 
    :web-context-path "/js"

@@ -31,6 +31,7 @@
   :exclusions [org.clojure/clojure org.clojure/clojurescript]
 
   :profiles {:dev {:dependencies [[org.clojure/clojurescript "1.7.170"]
+                                  [jarohen/bounce.mux "0.0.1-alpha1"]
                                   [lein-figwheel "0.5.0-2"]
                                   [com.cemerick/piggieback "0.2.1"]
                                   [reagent "0.5.1"]]}}
