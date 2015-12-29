@@ -1,5 +1,7 @@
 (ns {{name}}.ui.app
-  (:require [clojure.string :as s]
+  (:require [bounce.core :as bc]
+            [bounce.mux :as mux]
+            [bounce.mux.bidi :as mux.bidi]
             [reagent.core :as r]))
 
 (enable-console-print!)
@@ -8,7 +10,7 @@
   [:strong {:style {:font-family "'Courier New', 'monospace'"}}
    s])
 
-(defn page-component []
+(defn page-view []
   [:div.container {:style {:margin-top "1em"}}
    "Hello world!"]
 
@@ -38,12 +40,13 @@
      [:ol
       [:li "Connect to the normal server-side REPL (port 7888, by default)"]
       [:li "Evaluate: " [code "(bounce.figwheel/cljs-repl (bounce.core/ask :cljs-compiler)"]]
-      [:li "Refresh this page"]
       [:li "When you get a " [code "cljs.user =>"] " prompt, you can test it with:"
        [:ul
         [:li [code "(+ 1 1)"]]
         [:li [code "(js/window.alert \"Hello world!\")"]]
-        [:li [code "(set! (.-backgroundColor js/document.body.style) \"green\")"]]]]]]
+        [:li [code "(set! (.-backgroundColor js/document.body.style) \"green\")"]]
+        [:li [code "(bounce.core/snapshot)"] " - to get the current system state"]
+        [:li [code "(bounce.core/reload!)"] " - to reset the system state"]]]]]
 
     [:li [:p "Any trouble, let me know - either through GitHub or on Twitter at " [:a {:href "https://twitter.com/jarohen"} "@jarohen"]]]
 
@@ -59,8 +62,44 @@
      "GitHub: " [:a {:href "https://github.com/jarohen"} "jarohen"]]]])
 
 (defn render-page! []
-  (r/render-component [page-component] js/document.body))
+  (r/render-component [(fn []
+                         [@(r/cursor (bc/ask :!app) [::root-component])])]
+                      js/document.body))
+
+(defn make-bounce-map []
+  {:!app (fn []
+           (bc/->component (r/atom {})))
+
+   :router (-> (fn []
+                 (mux/make-router {:token-mapper (mux.bidi/token-mapper ["" {"/" ::main-page}])
+                                   :listener (fn [{:keys [location page]}]
+                                               (reset! (r/cursor (bc/ask :!app) [:location]) location)
+                                               (reset! (r/cursor (bc/ask :!app) [::root-component]) page))
+
+                                   :default-location {:handler ::main-page}
+
+                                   :pages {::main-page (fn [{:keys [old-location new-location same-handler?]}]
+                                                         (when-not same-handler?
+                                                           ;; mount!
+                                                           )
+
+                                                         (mux/->page (fn []
+                                                                       [page-view])
+
+                                                                     (fn [{:keys [old-location new-location same-handler?]}]
+                                                                       (when-not same-handler?
+                                                                         ;; un-mount!
+                                                                         ))))}}))
+               (bc/using #{:!app}))
+
+   :renderer (-> (fn []
+                   (bc/->component (render-page!)
+                                   (fn []
+                                     (r/unmount-component-at-node js/document.body))))
+
+                 (bc/using #{:!app :router}))})
 
 (set! (.-onload js/window)
       (fn []
-        (render-page!)))
+        (bc/set-system-map-fn! make-bounce-map)
+        (bc/start!)))
