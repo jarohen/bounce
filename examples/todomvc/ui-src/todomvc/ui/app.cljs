@@ -5,7 +5,6 @@
             [bounce.core :as bc]
             [bounce.mux :as mux]
             [bounce.mux.bidi :as mux.bidi]
-            [clojure.string :as s]
             [reagent.core :as r]))
 
 (enable-console-print!)
