@@ -138,6 +138,9 @@
                                            (p/-set-location! router location)))}))
 
                         (fn []
+                          (when-let [current-page @!current-page]
+                            (p/-unmount! current-page nil))
+
                           (.setEnabled history false)
                           (.unlisten history h/EventType.NAVIGATE history-listener)))))))
 
