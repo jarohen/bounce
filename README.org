@@ -5,13 +5,51 @@ functional style, for Clojure and ClojureScript.
 
 ** Dependency
 #+BEGIN_SRC clojure
-  [jarohen/bounce "0.0.1-SNAPSHOT"]
+  [jarohen/bounce "0.0.1-alpha1"]
 #+END_SRC
 
 There will likely be many breaking changes until 0.1.0!
 
-(There will eventually be a couple of Lein templates - 'bounce-webapp'
-and 'bounce-api' - but here follows a fuller explanation!)
+Other resources for getting started with Bounce include:
+
+- ~lein new bounce-webapp <your-project>~ - a lein template with a
+  simple CLJS app.
+- Any of the projects in the =examples= directory
+
+This README starts with an extensive discussion of '/why?/' - if
+you're looking for the '/how?/', please [[#concepts-in-bounce][skip ahead]].
+
+** The Big Disclaimer™
+
+#+BEGIN_QUOTE
+Bounce /is/ opinionated. It does, /explicitly and intentionally/,
+make tradeoffs which may not be suitable for all tastes/situations, in
+order to take advantage of certain pragmatic benefits.
+#+END_QUOTE
+
+This is, of course, probably true of most libraries!
+
+*Spoiler alert*: here are those tradeoffs:
+
+- In particular, Bounce sacrifices explicit referential transparency
+  (without loss of the benefits of referential
+  transparency). Functions /do/ make use of a context that hasn't been
+  passed in as an explicit parameter. This isn't to say that we lose
+  the testability benefits of referential transparency, though - we
+  can alter this context easily for testing porpoises.
+- Bounce does rely on a global variable. /What? Did he really just say
+  that? In a functional language? How dare he?!/ Yes :)
+
+  Generally speaking, there's only one 'System' running at a time in
+  an application, so let's not pretend we 'might need more than one'
+  (unless we genuinely do), and reap the benefits of making such an
+  assertion.
+
+  Having said that, Bounce does make it easy to test code against a
+  different System - so, again, we don't lose the testability
+  benefits.
+
+With those in mind, let's continue!
 
 ** What is Bounce looking to achieve?
 
@@ -35,6 +73,8 @@ alternative. We concluded that it should:
    possible. Especially, we wanted to avoid the property of the
    Component library whereby components have a 'pre-started' state,
    where it exists but hasn't been fully initialised.
+
+*** On 'referential transparency'
 
 Normally, in functional code, we look for (amongst other things) the
 property of referential transparency - that the output of any given
@@ -64,15 +104,20 @@ means one of three patterns pervading through the codebase:
    dependencies now does.
 3. Monads - this is the principle behind [[https://github.com/jarohen/yoyo][Yoyo]], and is explained
    further in its own documentation. In practice, though, this turned
-   out to be viral (not to mention a distinct pain in a certain part
-   of the body) - as soon as one function needed to return a monadic
-   value, it meant changing a lot of the call-stack.
+   out to be viral - as soon as one function needed to return a
+   monadic value, it meant changing a lot of the call-stack.
+
+Pragmatically speaking, explicitly declaring these dependencies
+through the call stack meant that we were polluting each function with
+implementation details of its callees.
+
+*** So what do we really want?
 
 
 
 ** Concepts in Bounce
 
-There are two main concepts in Bounce - Components and Systems
+There are two main concepts in Bounce - Components and Systems.
 
 *** Components
 
