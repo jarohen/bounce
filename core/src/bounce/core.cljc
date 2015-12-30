@@ -269,11 +269,11 @@
          (when close?
            (close-system! *!system*)))))))
 
-(defn with-vary-system
+(defn with-varied-system
   "Varies the system context for the duration of the function.
 
    Usage:
-   (with-vary-system #(assoc-in % [:config :db-config :db] \"test\")
+   (with-varied-system #(assoc-in % [:config :db-config :db] \"test\")
      (fn []
        ;; => \"test\"
        (println (bc/ask :config :db-config :db))))"
