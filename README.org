@@ -115,7 +115,41 @@ implementation details of its callees.
 
 *** So what do we really want?
 
+We quite like a couple of properties of global variables -
+particularly:
 
+- We can refer to them from /anywhere/, without needing to pass a
+  reference through the call stack.
+- It's easy to trace their usages
+- If you have /one/, developers know where to go to get a
+  configuration value, or access to a resource.
+
+But their tradeoffs are well-known, particularly:
+
+- Multiple threads having concurrent access to mutable state causes
+  trouble. (Clojure's core concurrency primitives mitigate this, to an
+  extent, but we'd still like to avoid it)
+- Not being able to alter their value for individual function calls
+  makes testing harder.
+
+Ideally, we'd like an immutable 'context' to be passed /implicitly/
+from caller to callee. Each callee could look up its dependencies in
+the context, without troubling its caller by asking for their
+dependencies to be explicitly passed as function parameters.
+
+We'd also like to be able to alter the context, albeit for the scope
+of one function call.
+
+This sounds remarkably like dynamic scope?
+
+Dynamic scope, though, has its own tradeoffs - it doesn't play
+particularly well with multiple threads, especially if those threads
+aren't in the caller's control (e.g. in a web server).
+
+
+The idea behind Bounce, therefore, is that by combining the two, we
+can take advantage of their relative benefits, and reduce/remove their
+tradeoffs.
 
 ** Concepts in Bounce
 
