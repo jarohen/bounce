@@ -215,7 +215,7 @@ read in code than they are to describe in English, so here goes:
                                                          (fn []
                                                            (close-web-server! opened-server)))))
 
-                                     (bc/using #{:config}))}))
+                                     (bc/using #{:config :db-conn}))}))
 #+END_SRC
 
 Points to note:
@@ -227,11 +227,6 @@ Points to note:
   function. ~bc/ask~ also accepts extra varargs - if the component is
   a nested map (like ~:config~, here), this behaves similarly to
   ~get-in~.
-- Interestingly - the ~:web-server~ isn't dependent on the
-  ~:db-conn~ - because it likely doesn't require the DB connection to
-  /start/ the web server - although it will likely require it /later/
-  (i.e. when it gets requests). More on asynchronous dependencies
-  below.
 - If the system errors, for whatever reason, any Components that were
   started before the error will be stopped.
 - If a Component's required dependency isn't declared, but is ~ask~-ed
