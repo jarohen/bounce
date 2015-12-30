@@ -269,3 +269,11 @@ easier:
       (bc/ask :foo-component) ;; => now returns the wrapped value
       ))
 #+END_SRC
+
+** LICENCE
+
+Copyright © 2015 James Henderson
+
+Bounce, and all modules within this repo, are distributed under the
+Eclipse Public License - either version 1.0 or (at your option) any
+later version.
