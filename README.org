@@ -227,6 +227,8 @@ Points to note:
   function. ~bc/ask~ also accepts extra varargs - if the component is
   a nested map (like ~:config~, here), this behaves similarly to
   ~get-in~.
+- We can ~bc/ask~ for dependencies further down the call-stack, too,
+  without changing any of the call-stack above.
 - If the system errors, for whatever reason, any Components that were
   started before the error will be stopped.
 - If a Component's required dependency isn't declared, but is ~ask~-ed
