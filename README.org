@@ -150,7 +150,57 @@ uninitialised state.
 
 *** Systems
 
-Systems, in Bounce, are a composition of components.
+Systems, in Bounce, are a composition of components. They're easier to
+read in code than they are to describe in English, so here goes:
+
+#+BEGIN_SRC clojure
+  (defn make-my-system []
+    (bc/make-system {:config (fn []
+                               (bc/->component (read-config ...)))
+
+                     :db-conn (-> (fn []
+                                    (let [opened-pool (open-pool! {:db-config (bc/ask :config :db)})]
+                                      (bc/->component opened-pool
+                                                      (fn []
+                                                        (close-pool! opened-pool)))))
+
+                                  (bc/using #{:config}))
+
+                     :web-server (-> (fn []
+                                       (let [opened-server (open-web-server! {:handler (make-handler)
+                                                                              :port (bc/ask :config :web-server :port)})]
+                                         (bc/->component opened-server
+                                                         (fn []
+                                                           (close-web-server! opened-server)))))
+
+                                     (bc/using #{:config}))}))
+#+END_SRC
+
+Points to note:
+- The system is a map from a component key to a 0-arg function
+  returning a Component
+- We can declare dependencies by wrapping that function in a call to
+  ~bc/using~, passing it a set of dependency keys.
+- We can ~bc/ask~ for dependencies within the Component
+  function. ~bc/ask~ also accepts extra varargs - if the component is
+  a nested map (like ~:config~, here), this behaves similarly to
+  ~get-in~.
+- Interestingly - the ~:web-server~ isn't dependent on the
+  ~:db-conn~ - because it likely doesn't require the DB connection to
+  /start/ the web server - although it will likely require it /later/
+  (i.e. when it gets requests). More on asynchronous dependencies
+  below.
+- If the system errors, for whatever reason, any Components that were
+  started before the error will be stopped.
+- If a Component's required dependency isn't declared, but is ~ask~-ed
+  for, an error's thrown immediately with details of the dependency -
+  it fails fast.
+- ~bc/make-system~ returns a System value. You likely won't use the
+  result directly.
+
+**** Running a system:
+
+
 
 *** 'Asking' for dependencies
 
@@ -178,96 +228,97 @@ Bounce, though, also provides a number of utilities that make testing
 easier:
 
 #+BEGIN_SRC clojure
-  (require '[bounce.core :as bc]
-           '[clojure.test :as t])
+    (require '[bounce.core :as bc]
+             '[clojure.test :as t])
 
-  ;; an sample component that we'll use throughout these examples
+    ;; an sample component that we'll use throughout these examples
 
-  (defn open-foo-component [opts]
-    (let [started-component (start-me! opts)]
-      (bc/->component started-component
-                      (fn []
-                        (stop-me! started-component)))))
+    (defn open-foo-component [opts]
+      (let [started-component (start-me! opts)]
+        (bc/->component started-component
+                        (fn []
+                          (stop-me! started-component)))))
 
-  ;; a sample main application system map - we'll adapt this (for testing) later
+    ;; a sample main application system map - we'll adapt this (for testing) later
 
-  (defn make-system-map []
-    ;; your main application system map
-    {:config ...
-     :db-conn ...
-     :queue-processor ...
-     :web-server ...
-     :foo-component (fn []
-                      (open-foo-component))})
-
-
+    (defn make-system-map []
+      ;; your main application system map
+      {:config ...
+       :db-conn ...
+       :queue-processor ...
+       :web-server ...
+       :foo-component (fn []
+                        (open-foo-component))})
 
 
-  ;; 'with-component' is a good way to test individual components,
-  ;; ensuring they're stopped when you're done.
-
-  (bc/with-component (open-foo-component ...)
-    (fn [component-value]
-      ;; test me!
-      ))
 
 
-  ;; 'with-system' allows you to run a form in a given context
+    ;; 'with-component' is a good way to test individual components,
+    ;; ensuring they're stopped when you're done.
 
-  (bc/with-system (bc/make-system {:db-conn (fn []
-                                              (let [mock-conn (open-mock-conn! ...)]
-                                                (bc/->component mock-conn
-                                                                (fn []
-                                                                  (close-mock-conn! mock-conn)))))
-                                   ...})
-    (fn []
-      (let [foo-user-id 123]
-        (t/is (= :expected-mock-result
-                 (get-user-from-db foo-user-id))))))
-
-  ;; you can also pass a map of values, if you don't want any of them to be closed:
-
-  (bc/with-system {:config {:a 1, :b 2}
-                   :mock-something (reify MyProtocol
-                                     ...)}
-    (fn []
-      (let [foo-user-id 123]
-        (t/is (= :expected-mock-result
-                 (get-user-from-db foo-user-id))))))
+    (bc/with-component (open-foo-component ...)
+      (fn [component-value]
+        ;; test me!
+        ))
 
 
-  ;; sometimes, you want to mostly use the current system, with a minor
-  ;; alteration - here's 'with-varied-system':
+    ;; don't forget about 'with-system'! this is particularly useful for
+    ;; testing:
 
-  (bc/with-varied-system #(assoc % :mock-something (reify MyProtocol
-                                                     ...))
-    (fn []
-      ;; test me!
-      ))
+    (bc/with-system (bc/make-system {:db-conn (fn []
+                                                (let [mock-conn (open-mock-conn! ...)]
+                                                  (bc/->component mock-conn
+                                                                  (fn []
+                                                                    (close-mock-conn! mock-conn)))))
+                                     ...})
+      (fn []
+        (let [foo-user-id 123]
+          (t/is (= :expected-mock-result
+                   (get-user-from-db foo-user-id))))))
+
+    ;; you can also pass a map of values, if you don't want any of them to be closed:
+
+    (bc/with-system {:config {:a 1, :b 2}
+                     :mock-something (reify MyProtocol
+                                       ...)}
+      (fn []
+        (let [foo-user-id 123]
+          (t/is (= :expected-mock-result
+                   (get-user-from-db foo-user-id))))))
 
 
-  ;; even 'make-system' can be called with an optional ':targets'
-  ;; option, to run a subset of your main system:
+    ;; sometimes, you want to mostly use the current system, with a minor
+    ;; alteration - here's 'with-varied-system':
 
-  (bc/with-system (bc/make-system (make-system-map) {:targets #{:config :db-conn}})
-    (fn []
-      ;; test code which only needs :config and :db-conn here - no need
-      ;; to start the web-server/queue-processor, etc
-      ))
+    (bc/with-varied-system #(assoc % :mock-something (reify MyProtocol
+                                                       ...))
+      (fn []
+        ;; test me!
+        ))
 
 
-  ;; you can adapt a component function within a system-map, using
-  ;; 'fmap-component-fn' - this allows you to alter/use/wrap the
-  ;; component value before it's put into the system map:
+    ;; even 'make-system' can be called with an optional ':targets'
+    ;; option, to run a subset of your main system:
 
-  (bc/with-system (bc/make-system (-> (make-system-map)
-                                      (update :foo-component fmap-component-fn (fn [started-foo-component]
-                                                                                 (-> started-foo-component
-                                                                                     (wrap-foo ...)))))
-                                  {:targets #{:foo-component}})
-    (fn []
-      (bc/ask :foo-component) ;; => now returns the wrapped value
-      ))
+    (bc/with-system (bc/make-system (make-system-map) {:targets #{:config :db-conn}})
+      (fn []
+        ;; test code which only needs :config and :db-conn here - no need
+        ;; to start the web-server/queue-processor, etc
+        ))
+
+
+    ;; you can adapt a component function within a system-map, using
+    ;; 'fmap-component-fn' - this allows you to alter/use/wrap the
+    ;; component value before it's put into the system map:
+
+    (bc/with-system (bc/make-system (-> (make-system-map)
+                                        (update :foo-component fmap-component-fn (fn [started-foo-component]
+                                                                                   (-> started-foo-component
+                                                                                       (wrap-foo ...)))))
+                                    {:targets #{:foo-component}})
+      (fn []
+        (bc/ask :foo-component) ;; => now returns the wrapped value
+        ))
 #+END_SRC
 
 ** Thanks!
