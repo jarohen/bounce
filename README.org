@@ -421,6 +421,8 @@ but particular thanks go to:
 - The team at Social Superstore - for the numerous design discussions
   which led to Bounce. Cheers [[https://github.com/danielneal][Daniel]], [[https://github.com/actionshrimp][Dave]], [[https://github.com/kgxsz][Keigo]], [[https://github.com/cichli][Mikey]], [[https://github.com/bronsa][Nicola]] and
   [[https://github.com/lorddoig][Sean]]!
+- [[https://github.com/krisajenkins][Kris Jenkins]] - for many a helpful design discussion (although I
+  suspect this might not be his cup of tea - sorry!)
 - [[https://github.com/aphyr][Aphyr]] (originally known as Kyle, so I've heard) - for his 2012
   article '[[https://aphyr.com/posts/240-configuration-and-scope][Configuration and Scope]]', which I was pointed to while
   writing Bounce - it expresses
