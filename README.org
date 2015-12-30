@@ -59,6 +59,12 @@ This is, of course, probably true of most libraries!
   different System - so, again, we don't lose the testability
   benefits.
 
+However, this doesn't mean that we have to, nor should, abandon our
+'Good Functional Programming Practices'™. Pure, referentially
+transparent functions /are/ easier to test, so we should still split
+functions (where possible) into pure functions and side-effecting
+functions, with the aim of minimising the latter.
+
 With those design decisions in mind, let's continue!
 
 * What is Bounce looking to achieve?
