@@ -270,6 +270,26 @@ easier:
       ))
 #+END_SRC
 
+** Thanks!
+
+A big thanks to everyone who's contributed to the development of
+Bounce so far. Individual contributions are detailed in the Changelog,
+but particular thanks go to:
+
+- The team at Social Superstore - for the numerous design discussions
+  which led to Bounce. Cheers [[https://github.com/danielneal][Daniel]], [[https://github.com/actionshrimp][Dave]], [[https://github.com/kgxsz][Keigo]], [[https://github.com/cichli][Mikey]], [[https://github.com/bronsa][Nicola]] and
+  [[https://github.com/lorddoig][Sean]]!
+
+** Feedback? Want to contribute?
+
+Yes please! Please submit issues/PRs in the usual Github way. I'm also
+contactable through Twitter, or email.
+
+If you do want to contribute a larger feature, that's great - but
+please let's discuss it before you spend a lot of time implementing
+it. If nothing else, I'll likely have thoughts, design ideas, or
+helpful pointers :)
+
 ** LICENCE
 
 Copyright © 2015 James Henderson
