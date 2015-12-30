@@ -8,7 +8,7 @@
 ;; -- Creating a system --
 
 (def ^:dynamic ^:private *!system*
-  nil)
+  (atom nil))
 
 (defn ->component
   "Creates a close-able component, with an optional close function."
@@ -133,12 +133,6 @@
 
 ;; -- REPL API --
 
-(def ^:private !system
-  (atom nil))
-
-(defn- !current-system []
-  (or *!system* !system))
-
 (def ^:private !system-fn
   (atom nil))
 
@@ -163,14 +157,14 @@
 
    If there is already a system running, this is a no-op"
   []
-  (when-not @!system
+  (when-not @*!system*
     (if-let [system-fn @!system-fn]
       (let [new-system (system-fn)]
         (when-not (satisfies? sys/ISystem new-system)
           (throw (ex-info "Expecting a system, got" {:type (type new-system)
                                                      :system new-system})))
 
-        (boolean (reset! !system new-system)))
+        (boolean (reset! *!system* new-system)))
 
       (throw (ex-info "Please set a Bounce system-fn!" {})))))
 
@@ -179,7 +173,7 @@
 
    If there is no system started, this is a no-op."
   []
-  (close-system! !system))
+  (close-system! *!system*))
 
 (defn reload!
   "REPL function - reloads the running system.
@@ -213,7 +207,7 @@
 
    If no system is provided, uses the current running system"
   ([]
-   (snapshot (some->> (!current-system)
+   (snapshot (some->> *!system*
                       deref)))
 
   ([system]
@@ -234,11 +228,10 @@
 
   If 'ks' are provided, they will be looked up as a nested path in the resulting value, like 'get-in'"
   [k & ks]
-  (let [!system (!current-system)
-        get-dep (loop []
-                  (if-let [system @!system]
+  (let [get-dep (loop []
+                  (if-let [system @*!system*]
                     (let [{:keys [next-system get-dep]} (sys/-ask system k)]
-                      (if (compare-and-set! !system system next-system)
+                      (if (compare-and-set! *!system* system next-system)
                         get-dep
                         (recur)))
 
