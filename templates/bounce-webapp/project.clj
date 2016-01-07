@@ -1,4 +1,4 @@
-(defproject bounce-webapp/lein-template "0.0.4"
+(defproject bounce-webapp/lein-template "0.0.5"
   :description "A template to generate a Bounce webapp project"
   :url "https://github.com/james-henderson/yoyo"
   :license {:name "Eclipse Public License"
