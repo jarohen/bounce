@@ -433,7 +433,8 @@ but particular thanks go to:
   suspect this might not be his cup of tea - sorry!)
 - [[https://github.com/aphyr][Aphyr]] (originally known as Kyle, so I've heard) - for his 2012
   article '[[https://aphyr.com/posts/240-configuration-and-scope][Configuration and Scope]]', which I was pointed to while
-  writing Bounce - it expresses
+  writing Bounce - it expresses a fair few of the ideas here in a very
+  comprehendible way.
 
 * Feedback? Want to contribute?
 
