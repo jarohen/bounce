@@ -21,17 +21,21 @@
    :router (-> (fn []
                  (mux/make-router {:token-mapper (mux.bidi/token-mapper ["" {"/" ::todos}])
                                    :listener (fn [{:keys [location page]}]
-                                               (reset! (r/cursor (bc/ask :!app) [:location]) location)
-                                               (reset! (r/cursor (bc/ask :!app) [::root-component]) page))
+                                               (swap! (bc/ask :!app)
+                                                      assoc
+                                                      :location location
+                                                      ::root-component page))
 
                                    :default-location {:handler ::todos}
 
                                    :pages {::todos (fn [{:keys [old-location new-location same-handler?]}]
-                                                     (when-not same-handler?
-                                                       (events/mount-todo-list!))
+                                                     (let [todo-state {:!todos (model/!todos)
+                                                                       :!todo-component (r/cursor (bc/ask :!app) [::events/!todo-component])}]
+                                                       (when-not same-handler?
+                                                         (events/mount-todo-list! todo-state))
 
-                                                     (mux/->page (fn []
-                                                                   [view/todo-list (events/todo-list-controller)])))}}))
+                                                       (mux/->page (fn []
+                                                                     [view/todo-list (events/todo-list-controller todo-state)]))))}}))
                (bc/using #{:!app}))
 
    :renderer (-> (fn []

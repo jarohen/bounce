@@ -8,7 +8,7 @@
 
 (defn make-webserver []
   (aleph/start-server! {:handler (make-handler)
-                        :server-opts {:port 3000}}))
+                        :server-opts {:port 4000}}))
 
 (defn make-system-map []
   {:cljs-compiler cljs/make-cljs-compiler

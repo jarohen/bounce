@@ -1,6 +1,5 @@
 (ns todomvc.ui.view
-  (:require [todomvc.ui.model :as model]
-            [goog.events.KeyCodes :as kc]
+  (:require [goog.events.KeyCodes :as kc]
             [reagent.core :as r]))
 
 (defn on-enter [f]
@@ -16,14 +15,14 @@
                     :on-change #(reset! !new-caption (.. % -target -value))
                     :on-key-down (on-enter save-new-todo!)}])
 
-(defn toggle-all-view [{:keys [set-all-done!]}]
-  (let [all-done? (every? :done? (vals @(model/!todos)))]
+(defn toggle-all-view [{:keys [!todos set-all-done!]}]
+  (let [all-done? (every? :done? (vals @!todos))]
     [:input#toggle-all {:type "checkbox"
                         :checked all-done?
                         :on-change #(set-all-done! (not all-done?))}]))
 
-(defn todo-item [todo-id {:keys [edit! editing? !new-caption set-done! delete! save-todo!]}]
-  (let [{:keys [done? caption] :as todo-item} @(r/cursor (model/!todos) [todo-id])]
+(defn todo-item [todo-id {:keys [!todo edit! editing? !new-caption toggle-done! delete! save-todo!]}]
+  (let [{:keys [done? caption] :as todo-item} @!todo]
     (if (editing?)
       [:li.editing
        [:input.edit {:value @!new-caption
@@ -36,15 +35,15 @@
        [:div.view
         [:input.toggle {:type "checkbox",
                         :checked done?
-                        :on-change #(set-done! (not done?))}]
+                        :on-change #(toggle-done!)}]
 
         [:label {:on-double-click #(edit!)}
          caption]
 
         [:button.destroy {:on-click #(delete!)}]]])))
 
-(defn stats-view []
-  (let [todo-count (->> @(model/!todos)
+(defn stats-view [{:keys [!todos]}]
+  (let [todo-count (->> @!todos
                         vals
                         (remove :done?)
                         count)]
@@ -52,13 +51,8 @@
      [:strong todo-count]
      [:span " items left"]]))
 
-(def filter-todos
-  {:all identity
-   :active (complement :done?)
-   :completed :done?})
-
-(defn clear-completed-view [{:keys [clear-completed!]}]
-  (let [completed-count (->> @(model/!todos)
+(defn clear-completed-view [{:keys [clear-completed! !todos]}]
+  (let [completed-count (->> @!todos
                              vals
                              (filter :done?)
                              count)]
@@ -67,7 +61,7 @@
        [:button#clear-completed {:on-click #(clear-completed!)}
         (str "Clear completed " completed-count)])]))
 
-(def filter-label
+(def filter-labels
   {:all "All"
    :active "Active"
    :completed "Completed"})
@@ -75,15 +69,20 @@
 (defn filters-view [{:keys [!filter]}]
   [:ul#filters
    (let [todo-filter @!filter]
-     (for [filter-option [:all :active :completed]]
+     (for [filter-option (keys filter-labels)]
        [:li {:style {:cursor :pointer}
              :key filter-option}
         [:a {:class (when (= todo-filter filter-option)
                       "selected")
              :on-click #(reset! !filter filter-option)}
-         (filter-label filter-option)]]))])
+         (get filter-labels filter-option)]]))])
 
-(defn todo-list [{:keys [!filter todo-item-controller] :as handlers}]
+(def todo-filters
+  {:all identity
+   :active (complement :done?)
+   :completed :done?})
+
+(defn todo-list [{:keys [!todos !filter todo-item-controller] :as handlers}]
   [:section#todoapp
    [:header#header
     [:h1 "todos"]
@@ -95,8 +94,8 @@
      "Mark all as complete"]
 
     [:ul#todo-list
-     (-> (for [todo-id (->> @(model/!todos)
-                            (filter (comp (get filter-todos @!filter) val))
+     (-> (for [todo-id (->> @!todos
+                            (filter (comp (get todo-filters @!filter) val))
                             (map key)
                             sort)]
            (-> [todo-item todo-id (todo-item-controller todo-id)]
@@ -107,6 +106,6 @@
     [:p "Double-click to edit a todo"]]
 
    [:footer#footer
-    [stats-view]
+    [stats-view handlers]
     [filters-view handlers]
     [clear-completed-view handlers]]])

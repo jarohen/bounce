@@ -1,21 +1,17 @@
 (ns todomvc.ui.events
-  (:require [todomvc.ui.model :as model]
-            [bounce.core :as bc]
+  (:require [bounce.core :as bc]
             [clojure.string :as s]
             [reagent.core :as r]
             [traversy.lens :as tl]))
 
-(defn !todo-component []
-  (r/cursor (bc/ask :!app) [::todo-component]))
+(defn todo-item-controller [todo-id {:keys [!todos !todo-component] :as todo-state}]
+  (let [!todo (r/cursor !todos [todo-id])
 
-(defn todo-item-controller [todo-id]
-  (let [!todo (r/cursor (model/!todos) [todo-id])
+        !todo-items (r/cursor !todo-component [:todo-items])
+        !todo-item (r/cursor !todo-items [todo-id])]
 
-        !todo-items (r/cursor (!todo-component) [:todo-items])
-        !todo-item (r/cursor !todo-items [todo-id])
-        !new-caption (r/cursor !todo-item [:new-caption])]
-
-    {:!new-caption !new-caption
+    {:!todo !todo
+     :!new-caption (r/cursor !todo-item [:new-caption])
 
      :edit! (fn []
               (swap! !todo-item
@@ -34,45 +30,44 @@
      :editing? (fn []
                  (:editing? @!todo-item))
 
-     :set-done! (fn [done?]
-                  (swap! !todo assoc :done? done?))
+     :toggle-done! (fn []
+                     (swap! !todo update :done? not))
 
      :delete! (fn []
-                (swap! (model/!todos) dissoc todo-id)
+                (swap! !todos dissoc todo-id)
                 (swap! !todo-items dissoc todo-id))}))
 
-(defn new-todo-controller []
-  (let [!new-caption (r/cursor (!todo-component) [:new-todo-caption])]
+(defn new-todo-controller [{:keys [!todos !todo-component] :as todo-state}]
+  (let [!new-caption (r/cursor !todo-component [:new-todo-caption])]
     {:!new-caption !new-caption
 
      :save-new-todo! (fn []
-                       (swap! (model/!todos)
+                       (swap! !todos
                               (fn [todos]
                                 (let [new-id (inc (apply max 0 (keys todos)))]
                                   (assoc todos new-id {:caption @!new-caption}))))
 
                        (reset! !new-caption nil))}))
 
-(defn mount-todo-list! []
-  (reset! (!todo-component) {:todo-filter :all}))
+(defn mount-todo-list! [{:keys [!todo-component]}]
+  (reset! !todo-component {:todo-filter :all}))
 
-(defn todo-list-controller []
-  (merge (new-todo-controller)
+(defn todo-list-controller [{:keys [!todos !todo-component] :as todo-state}]
+  (merge (new-todo-controller todo-state)
 
-         {:!filter (r/cursor (!todo-component) [:todo-filter])
+         {:!todos !todos
+
+          :!filter (r/cursor !todo-component [:todo-filter])
 
           :set-all-done! (fn [done?]
-                           (swap! (model/!todos)
-                                  tl/update
-                                  tl/all-values
-                                  #(assoc % :done? done?)))
+                           (swap! !todos tl/update tl/all-values #(assoc % :done? done?)))
 
           :clear-completed! (fn []
-                              (swap! (model/!todos)
+                              (swap! !todos
                                      (fn [todos]
                                        (select-keys todos (->> todos
                                                                (remove (comp :done? val))
                                                                (map key))))))
 
           :todo-item-controller (fn [todo-id]
-                                  (todo-item-controller todo-id))}))
+                                  (todo-item-controller todo-id todo-state))}))
