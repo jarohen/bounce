@@ -1,4 +1,4 @@
-(defproject jarohen/bounce.mux "0.0.1-alpha1"
+(defproject jarohen/bounce.mux "0.0.1-alpha2"
   :description "A CLJS router for Bounce systems, based on Bidi"
   :url "https://github.com/jarohen/bounce"
 

@@ -86,17 +86,18 @@
                                                   (let [old-location @!current-location]
                                                     (if (compare-and-set! !current-location old-location new-location)
                                                       [old-location new-location]
-                                                      (recur))))]
+                                                      (recur))))
 
+                    mount-fn-args {:old-location old-location
+                                   :new-location new-location
+                                   :same-handler? (= (:handler old-location) (:handler new-location))}]
                 (when (not= old-location new-location)
                   (if-let [new-page-fn (get pages (:handler new-location))]
-                    (let [same-handler? (= (:handler old-location) (:handler new-location))]
+                    (do
                       (when-let [old-page @!current-page]
-                        (p/-unmount! old-page (merge new-location
-                                                     {:same-handler? same-handler?})))
+                        (p/-unmount! old-page mount-fn-args))
 
-                      (let [new-page (new-page-fn (merge old-location
-                                                         {:same-handler? same-handler?}))]
+                      (let [new-page (new-page-fn mount-fn-args)]
                         (reset! !current-page new-page)
                         (listener {:location new-location
                                    :page (p/-value new-page)})))
