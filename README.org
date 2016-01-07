@@ -3,7 +3,7 @@ functional style, for Clojure and ClojureScript.
 
 ** Dependency
 #+BEGIN_SRC clojure
-  [jarohen/bounce "0.0.1-alpha1"]
+  [jarohen/bounce "0.0.1-alpha2"]
 #+END_SRC
 
 There will likely be many breaking changes until 0.1.0!
