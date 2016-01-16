@@ -121,7 +121,9 @@ means one of three patterns pervading through the codebase:
 3. Monads - this is the principle behind [[https://github.com/jarohen/yoyo][Yoyo]], and is explained
    further in its own documentation. In practice, though, this turned
    out to be viral - as soon as one function needed to return a
-   monadic value, it meant changing a lot of the call-stack.
+   monadic value, it meant changing a lot of the call-stack. Also, in
+   our experience, developing with monads definitely benefits from a
+   type-system, so it's probably not the best approach in Clojure.
 
 Pragmatically speaking, explicitly declaring these dependencies
 through the call stack meant that we were polluting each function with
