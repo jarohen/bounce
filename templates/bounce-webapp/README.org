@@ -1,14 +1,10 @@
-* Yo-yo Webapp template
+* Bounce Webapp template
 
 To create a webapp, run:
 
 #+BEGIN_SRC sh
-  lein new yoyo-webapp <your-app-name> -- <:frontend-library>
+  lein new bounce-webapp <your-app-name>
 #+END_SRC
 
-where =<:frontend-library>= is one of:
-
-- =:flow=
-- =:reagent=
-- =:om-sablono=
-- =:om=
+Then, =cd= to the project directory, run ~lein dev~, and head to
+[[http://localhost:3000]] for more instructions!
