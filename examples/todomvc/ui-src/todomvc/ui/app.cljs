@@ -1,6 +1,6 @@
 (ns todomvc.ui.app
   (:require [todomvc.ui.model :as model]
-            [todomvc.ui.events :as events]
+            [todomvc.ui.ctx :as ctx]
             [todomvc.ui.view :as view]
             [bounce.core :as bc]
             [bounce.mux :as mux]
@@ -30,12 +30,12 @@
 
                                    :pages {::todos (fn [{:keys [old-location new-location same-handler?]}]
                                                      (let [todo-state {:!todos (model/!todos)
-                                                                       :!todo-component (r/cursor (bc/ask :!app) [::events/!todo-component])}]
+                                                                       :!todo-component (r/cursor (bc/ask :!app) [::ctx/!todo-component])}]
                                                        (when-not same-handler?
-                                                         (events/mount-todo-list! todo-state))
+                                                         (ctx/mount-todo-list! todo-state))
 
                                                        (mux/->page (fn []
-                                                                     [view/todo-list (events/todo-list-controller todo-state)]))))}}))
+                                                                     [view/todo-list (ctx/todo-list-ctx todo-state)]))))}}))
                (bc/using #{:!app}))
 
    :renderer (-> (fn []

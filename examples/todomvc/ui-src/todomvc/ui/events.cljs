@@ -1,10 +1,10 @@
-(ns todomvc.ui.events
+(ns todomvc.ui.ctx
   (:require [bounce.core :as bc]
             [clojure.string :as s]
             [reagent.core :as r]
             [traversy.lens :as tl]))
 
-(defn todo-item-controller [todo-id {:keys [!todos !todo-component] :as todo-state}]
+(defn todo-item-ctx [todo-id {:keys [!todos !todo-component] :as todo-state}]
   (let [!todo (r/cursor !todos [todo-id])
 
         !todo-items (r/cursor !todo-component [:todo-items])
@@ -37,7 +37,7 @@
                 (swap! !todos dissoc todo-id)
                 (swap! !todo-items dissoc todo-id))}))
 
-(defn new-todo-controller [{:keys [!todos !todo-component] :as todo-state}]
+(defn new-todo-ctx [{:keys [!todos !todo-component] :as todo-state}]
   (let [!new-caption (r/cursor !todo-component [:new-todo-caption])]
     {:!new-caption !new-caption
 
@@ -52,8 +52,8 @@
 (defn mount-todo-list! [{:keys [!todo-component]}]
   (reset! !todo-component {:todo-filter :all}))
 
-(defn todo-list-controller [{:keys [!todos !todo-component] :as todo-state}]
-  (merge (new-todo-controller todo-state)
+(defn todo-list-ctx [{:keys [!todos !todo-component] :as todo-state}]
+  (merge (new-todo-ctx todo-state)
 
          {:!todos !todos
 
@@ -69,5 +69,5 @@
                                                                (remove (comp :done? val))
                                                                (map key))))))
 
-          :todo-item-controller (fn [todo-id]
-                                  (todo-item-controller todo-id todo-state))}))
+          :todo-item-ctx (fn [todo-id]
+                           (todo-item-ctx todo-id todo-state))}))

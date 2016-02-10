@@ -8,7 +8,7 @@
       (f e)
       (.preventDefault e))))
 
-(defn new-todo-view [{:keys [save-new-todo! !new-caption] :as handlers}]
+(defn new-todo-view [{:keys [save-new-todo! !new-caption] :as ctx}]
   [:input#new-todo {:placeholder "What needs to be done?"
                     :type "text"
                     :value @!new-caption
@@ -82,14 +82,14 @@
    :active (complement :done?)
    :completed :done?})
 
-(defn todo-list [{:keys [!todos !filter todo-item-controller] :as handlers}]
+(defn todo-list [{:keys [!todos !filter todo-item-ctx] :as ctx}]
   [:section#todoapp
    [:header#header
     [:h1 "todos"]
-    [new-todo-view handlers]]
+    [new-todo-view ctx]]
 
    [:section#main
-    [toggle-all-view handlers]
+    [toggle-all-view ctx]
     [:label {:for "toggle-all"}
      "Mark all as complete"]
 
@@ -98,7 +98,7 @@
                             (filter (comp (get todo-filters @!filter) val))
                             (map key)
                             sort)]
-           (-> [todo-item todo-id (todo-item-controller todo-id)]
+           (-> [todo-item todo-id (todo-item-ctx todo-id)]
                (with-meta {:key todo-id})))
          doall)]]
 
@@ -106,6 +106,6 @@
     [:p "Double-click to edit a todo"]]
 
    [:footer#footer
-    [stats-view handlers]
-    [filters-view handlers]
-    [clear-completed-view handlers]]])
+    [stats-view ctx]
+    [filters-view ctx]
+    [clear-completed-view ctx]]])
