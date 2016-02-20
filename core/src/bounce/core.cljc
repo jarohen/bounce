@@ -231,7 +231,8 @@
   (let [get-dep (loop []
                   (if-let [system @*!system*]
                     (let [{:keys [next-system get-dep]} (sys/-ask system k)]
-                      (if (compare-and-set! *!system* system next-system)
+                      (if (or (identical? next-system system)
+                              (compare-and-set! *!system* system next-system))
                         get-dep
                         (recur)))
 
