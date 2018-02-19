@@ -1,4 +1,4 @@
-(ns bounce.core
+(ns bounce.system
   (:require [clojure.set :as set]
             [com.stuartsierra.dependency :as deps]))
 
