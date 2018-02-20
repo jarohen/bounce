@@ -49,7 +49,7 @@
                                    [dep-or-dep+args nil])
                   dep (resolve-dep dep)]
               [(conj deps dep) (merge {dep dep-args} args)]))
-          [#{} args]
+          [#{} (->> args (into {} (fn [[dep args]] [(resolve-dep dep) args])))]
           deps))
 
 (defn start-system
