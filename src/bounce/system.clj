@@ -34,24 +34,42 @@
                        upstream-deps)))
       (remove #{:system} (deps/topo-sort g)))))
 
+(defn- resolve-dep [dep]
+  (cond
+    (var? dep) dep
+    (symbol? dep) (or (do
+                        (some-> (namespace dep) symbol require)
+                        (resolve dep))
+                      (throw (ex-info "Could not resolve dependency" {:dep dep})))))
+
+(defn- normalise-deps+args [deps args]
+  (reduce (fn [[deps args] dep-or-dep+args]
+            (let [[dep dep-args] (if (vector? dep-or-dep+args)
+                                   [(first dep-or-dep+args) (rest dep-or-dep+args)]
+                                   [dep-or-dep+args nil])
+                  dep (resolve-dep dep)]
+              [(conj deps dep) (merge {dep dep-args} args)]))
+          [#{} args]
+          deps))
+
 (defn start-system
   ([deps] (start-system deps {}))
   ([deps {:bounce/keys [args overrides]}]
-   (let [dep-order (order-deps deps)
+   (let [[deps args] (normalise-deps+args deps args)
+         dep-order (order-deps deps)
          start-fn (reduce (fn [f dep]
                             (fn [system]
                               (let [component-fn (or (get overrides dep)
                                                      (:bounce/component (meta dep)))
                                     started-component (->started-component (apply component-fn (get args dep)))]
-                                (try
-                                  (push-thread-bindings {dep (:value started-component)})
-                                  (f (assoc system dep started-component))
-                                  (catch Exception e
-                                    (try
-                                      ((:stop! started-component))
-                                      (catch Exception e (.printStackTrace e))))
-                                  (finally
-                                    (pop-thread-bindings))))))
+                                (with-bindings {dep (:value started-component)}
+                                  (try
+                                    (f (assoc system dep started-component))
+                                    (catch Exception e
+                                      (try
+                                        ((:stop! started-component))
+                                        (catch Exception e (.printStackTrace e)))
+                                      (throw e)))))))
                           identity
                           (reverse dep-order))]
      {:dep-order dep-order
@@ -61,42 +79,30 @@
   (let [stop-fn (reduce (fn [f dep]
                           (fn [system]
                             (let [{:keys [value stop!]} (get components dep)]
-                              (try
-                                (push-thread-bindings {dep value})
+                              (with-bindings {dep value}
                                 (f (assoc system dep value))
-                                (stop!)
-                                (finally
-                                  (pop-thread-bindings))))))
+                                (stop!)))))
                         identity
                         (reverse dep-order))]
     (stop-fn {})
     (set dep-order)))
 
-(defn- resolve-dep [dep]
-  (cond
-    (var? dep) dep
-    (symbol? dep) (or (do
-                        (some-> (namespace dep) symbol require)
-                        (resolve dep))
-                      (throw (ex-info "Could not resolve dependency" {:dep dep})))))
-
 (defn start!
   ([deps] (start! deps {}))
 
   ([deps {:bounce/keys [args overrides] :as opts}]
-   (let [deps (into #{} (map resolve-dep) deps)]
-     (if-not (compare-and-set! !system nil :starting)
-       (throw (ex-info "System is already starting/started" {:system @!system}))
+   (if-not (compare-and-set! !system nil :starting)
+     (throw (ex-info "System is already starting/started" {:system @!system}))
 
-       (try
-         (let [{:keys [dep-order components] :as started-system} (start-system deps opts)]
-           (doseq [[dep {:keys [value]}] components]
-             (alter-var-root dep (constantly value)))
-           (reset! !system started-system)
-           (set dep-order))
-         (catch Exception e
-           (reset! !system nil)
-           (throw e)))))))
+     (try
+       (let [{:keys [dep-order components] :as started-system} (start-system deps opts)]
+         (doseq [[dep {:keys [value]}] components]
+           (alter-var-root dep (constantly value)))
+         (reset! !system started-system)
+         (set dep-order))
+       (catch Exception e
+         (reset! !system nil)
+         (throw e))))))
 
 (defn stop! []
   (let [system @!system]
