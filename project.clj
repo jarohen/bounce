@@ -1,4 +1,4 @@
-(defproject jarohen/bounce "0.0.1-alpha5"
+(defproject jarohen/bounce "0.0.1-SNAPSHOT"
   :description "Bounce is a protocol-less, function composition-based alternative to Component"
   :url "https://github.com/jarohen/bounce"
   :license {:name "Eclipse Public License"
