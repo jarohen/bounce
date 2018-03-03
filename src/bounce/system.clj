@@ -88,10 +88,18 @@
     (stop-fn {})
     (set dep-order)))
 
+(def ^:private !last-opts (atom nil))
+
 (defn start!
+  ([] (if-let [[deps opts] @!last-opts]
+        (start! deps opts)
+        #{}))
+
   ([deps] (start! deps {}))
 
   ([deps {:bounce/keys [args overrides] :as opts}]
+   (reset! !last-opts [deps opts])
+
    (if-not (compare-and-set! !system nil :starting)
      (throw (ex-info "System is already starting/started" {:system @!system}))
 
