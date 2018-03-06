@@ -26,6 +26,19 @@
   (let [{:keys [value stop!]} (->started-component component)]
     (->started-component (f value) stop!)))
 
+(defn with-component* [component f]
+  (let [{:keys [value stop!]} (->started-component component)]
+    (try
+      (f value)
+      (finally
+        (try
+          (stop!)
+          (catch Exception e
+            (.printStackTrace e)))))))
+
+(defmacro with-component [[binding component] & body]
+  `(with-component* ~component (fn [~binding] ~@body)))
+
 (defn order-deps [deps]
   (loop [[dep & more-deps] (seq deps)
          seen #{}
@@ -93,6 +106,22 @@
                         (reverse dep-order))]
     (stop-fn {})
     (set dep-order)))
+
+(defcomponent *foo* #{} []
+  (-> :foo
+      (with-stop (prn :foo-stop))))
+
+(defn with-system* [system f]
+  (with-bindings (->> (:components system)
+                      (into {} (map (fn [[component-var {:keys [value]}]]
+                                      [component-var value]))))
+    (try
+      (f)
+      (finally
+        (stop-system system)))))
+
+(defmacro with-system [system & body]
+  `(with-system* ~system (fn [] ~@body)))
 
 (def ^:private !last-opts (atom nil))
 
