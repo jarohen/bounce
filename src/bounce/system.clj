@@ -22,12 +22,18 @@
 (defmacro with-stop [value & body]
   `(->started-component ~value (fn ~'stop [] ~@body)))
 
+(defn fmap-component [component f]
+  (let [{:keys [value stop!]} (->started-component component)]
+    (->started-component (f value) stop!)))
+
 (defn order-deps [deps]
   (loop [[dep & more-deps] (seq deps)
+         seen #{}
          g (deps/graph)]
     (if dep
       (let [upstream-deps (:bounce/deps (meta dep))]
-        (recur (distinct (remove (set (deps/nodes g)) (concat more-deps upstream-deps)))
+        (recur (distinct (remove seen (concat more-deps upstream-deps)))
+               (conj seen dep)
                (reduce (fn [g upstream-dep]
                          (deps/depend g dep upstream-dep))
                        (deps/depend g :system dep)
