@@ -39,20 +39,6 @@
 (defmacro with-component [[binding component] & body]
   `(with-component* ~component (fn [~binding] ~@body)))
 
-(defn order-deps [deps]
-  (loop [[dep & more-deps] (seq deps)
-         seen #{}
-         g (deps/graph)]
-    (if dep
-      (let [upstream-deps (:bounce/deps (meta dep))]
-        (recur (distinct (remove seen (concat more-deps upstream-deps)))
-               (conj seen dep)
-               (reduce (fn [g upstream-dep]
-                         (deps/depend g dep upstream-dep))
-                       (deps/depend g :system dep)
-                       upstream-deps)))
-      (remove #{:system} (deps/topo-sort g)))))
-
 (defn- resolve-dep [dep]
   (cond
     (var? dep) dep
@@ -60,6 +46,20 @@
                         (some-> (namespace dep) symbol require)
                         (resolve dep))
                       (throw (ex-info "Could not resolve dependency" {:dep dep})))))
+
+(defn order-deps [deps]
+  (loop [[dep & more-deps] (seq deps)
+         seen #{}
+         g (deps/graph)]
+    (if dep
+      (let [upstream-deps (map resolve-dep (:bounce/deps (meta dep)))]
+        (recur (distinct (remove seen (concat more-deps upstream-deps)))
+               (conj seen dep)
+               (reduce (fn [g upstream-dep]
+                         (deps/depend g dep upstream-dep))
+                       (deps/depend g :system dep)
+                       upstream-deps)))
+      (remove #{:system} (deps/topo-sort g)))))
 
 (defn- normalise-deps+args [deps args]
   (reduce (fn [[deps args] dep-or-dep+args]
