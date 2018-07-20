@@ -2,7 +2,7 @@
   (:require [clojure.set :as set]
             [com.stuartsierra.dependency :as deps]))
 
-(def !system
+(def ^:private !system
   (atom nil))
 
 (defrecord StartedComponent [value stop!])
@@ -106,10 +106,6 @@
                         (reverse dep-order))]
     (stop-fn {})
     (set dep-order)))
-
-(defcomponent *foo* #{} []
-  (-> :foo
-      (with-stop (prn :foo-stop))))
 
 (defn with-system* [system f]
   (with-bindings (->> (:components system)
