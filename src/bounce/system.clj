@@ -151,3 +151,7 @@
         (stop-system system)
         (finally
           (reset! !system nil))))))
+
+(defn restart! []
+  (stop!)
+  (start!))
