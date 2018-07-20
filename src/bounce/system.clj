@@ -13,11 +13,21 @@
              (->StartedComponent value (fn []))))
   ([value stop!] (->StartedComponent value stop!)))
 
-(defmacro defcomponent [sym deps bindings & body]
-  `(doto (def ~(-> sym (with-meta {:dynamic true})))
-     (alter-meta! merge {:bounce/deps ~deps
-                         :bounce/component (fn ~(symbol (str "start-" (name sym))) [~@bindings]
-                                             (->started-component (do ~@body)))})))
+(defn- parse-component-opts [body]
+  (reduce (fn [acc form]
+            (cond
+              (:bounce/deps (meta form)) (assoc acc :deps form)
+              (:bounce/args (meta form)) (assoc acc :args form)
+              :else (update acc :body conj form)))
+          {:body []}
+          body))
+
+(defmacro defcomponent [sym & body]
+  (let [{:keys [deps args body]} (parse-component-opts body)]
+    `(doto (def ~(-> sym (with-meta {:dynamic true})) nil)
+       (alter-meta! merge {:bounce/deps '~deps
+                           :bounce/component (fn ~(symbol (str "start-" (name sym))) [~@args]
+                                               (->started-component (do ~@body)))}))))
 
 (defmacro with-stop [value & body]
   `(->started-component ~value (fn ~'stop [] ~@body)))
