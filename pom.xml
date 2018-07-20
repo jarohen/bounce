@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>jarohen</groupId>
+  <artifactId>bounce</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>bounce</name>
+
+  <description>
+    Bounce is a protocol-less, function composition-based alternative to Component
+  </description>
+
+  <licenses>
+    <license>
+      <name>Eclipse Public License - v1.0</name>
+      <url>https://www.eclipse.org/legal/epl-v10.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <url>https://github.com/jarohen/bounce</url>
+    <connection>scm:git:git://github.com/jarohen/bounce.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/jarohen/bounce.git</developerConnection>
+  </scm>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <version>1.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>tools.namespace</artifactId>
+      <version>0.2.11</version>
+    </dependency>
+    <dependency>
+      <groupId>com.stuartsierra</groupId>
+      <artifactId>dependency</artifactId>
+      <version>0.2.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>src</directory>
+        <includes>
+          <include>**/*.clj</include>
+        </includes>
+      </resource>
+    </resources>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>clojars</id>
+      <url>https://repo.clojars.org/</url>
+    </repository>
+  </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>clojars</id>
+      <url>https://repo.clojars.org/</url>
+    </repository>
+  </distributionManagement>
+</project>
