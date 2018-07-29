@@ -49,12 +49,12 @@
 (defmacro with-component [[binding component] & body]
   `(with-component* ~component (fn [~binding] ~@body)))
 
-(defn- resolve-dep [dep]
+(defn- resolve-dep [ns dep]
   (cond
     (var? dep) dep
     (symbol? dep) (or (do
                         (some-> (namespace dep) symbol require)
-                        (resolve dep))
+                        (ns-resolve ns dep))
                       (throw (ex-info "Could not resolve dependency" {:dep dep})))))
 
 (defn order-deps [deps]
@@ -62,7 +62,7 @@
          seen #{}
          g (deps/graph)]
     (if dep
-      (let [upstream-deps (map resolve-dep (:bounce/deps (meta dep)))]
+      (let [upstream-deps (map #(resolve-dep (:ns (meta dep)) %) (:bounce/deps (meta dep)))]
         (recur (distinct (remove seen (concat more-deps upstream-deps)))
                (conj seen dep)
                (reduce (fn [g upstream-dep]
@@ -76,10 +76,10 @@
             (let [[dep dep-args] (if (vector? dep-or-dep+args)
                                    [(first dep-or-dep+args) (rest dep-or-dep+args)]
                                    [dep-or-dep+args nil])
-                  dep (resolve-dep dep)]
+                  dep (resolve-dep nil dep)]
               [(conj deps dep) (merge {dep dep-args} args)]))
           [#{} (->> args (into {} (map (fn [[dep args]]
-                                         [(resolve-dep dep) args]))))]
+                                         [(resolve-dep nil dep) args]))))]
           deps))
 
 (defn start-system
