@@ -72,10 +72,11 @@
             (let [[dep dep-args] (if (vector? dep-or-dep+args)
                                    [(first dep-or-dep+args) (rest dep-or-dep+args)]
                                    [dep-or-dep+args nil])
-                  dep (resolve-dep nil dep)]
+                  dep (resolve-dep (symbol (namespace dep)) dep)]
               [(conj deps dep) (merge {dep dep-args} args)]))
+
           [#{} (->> args (into {} (map (fn [[dep args]]
-                                         [(resolve-dep nil dep) args]))))]
+                                         [(resolve-dep (symbol (namespace dep)) dep) args]))))]
           deps))
 
 (defn start-system
