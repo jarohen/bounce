@@ -13,17 +13,13 @@
              (->StartedComponent value (fn []))))
   ([value stop!] (->StartedComponent value stop!)))
 
-(defn- parse-component-opts [body]
-  (reduce (fn [acc form]
-            (cond
-              (:bounce/deps (meta form)) (assoc acc :deps form)
-              (:bounce/args (meta form)) (assoc acc :args form)
-              :else (update acc :body conj form)))
-          {:body []}
-          body))
+(defn- parse-component-opts [[maybe-opts & body]]
+  (if (and (map? maybe-opts) (seq body))
+    (merge {:body body} (select-keys maybe-opts #{:bounce/deps :bounce/args}))
+    {:body (cons maybe-opts body)}))
 
 (defmacro defcomponent [sym & body]
-  (let [{:keys [deps args body]} (parse-component-opts body)]
+  (let [{:keys [bounce/deps bounce/args body]} (parse-component-opts body)]
     `(doto (def ~(-> sym (with-meta {:dynamic true})) nil)
        (alter-meta! merge {:bounce/deps '~deps
                            :bounce/component (fn ~(symbol (str "start-" (name sym))) [~@args]
