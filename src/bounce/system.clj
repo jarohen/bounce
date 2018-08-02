@@ -116,34 +116,30 @@
 (defmacro with-system [system & body]
   `(with-system* ~system (fn [] ~@body)))
 
-(def ^:private !last-opts (atom nil))
+(def ^:private !opts (atom nil))
 
-(defn start!
-  ([] (if-let [[deps opts] @!last-opts]
-        (start! deps opts)
-        #{}))
+(defn set-opts!
+  ([deps] (set-opts! deps {}))
+  ([deps opts] (reset! !opts [deps opts])))
 
-  ([deps] (start! deps {}))
+(defn start! []
+  (when-let [[deps opts] @!opts]
+    (let [deps (->> deps
+                    (into #{} (keep (fn [dep]
+                                      (ns-resolve (doto (symbol (namespace dep)) require) dep)))))]
 
-  ([deps {:bounce/keys [args overrides] :as opts}]
-   (reset! !last-opts [deps opts])
+      (if-not (compare-and-set! !system nil :starting)
+        (throw (ex-info "System is already starting/started" {:system @!system}))
 
-   (let [deps (->> deps
-                   (into #{} (keep (fn [dep]
-                                     (ns-resolve (doto (symbol (namespace dep)) require) dep)))))]
-
-     (if-not (compare-and-set! !system nil :starting)
-       (throw (ex-info "System is already starting/started" {:system @!system}))
-
-       (try
-         (let [{:keys [dep-order components] :as started-system} (start-system deps opts)]
-           (doseq [[dep {:keys [value]}] components]
-             (alter-var-root dep (constantly value)))
-           (reset! !system started-system)
-           (set dep-order))
-         (catch Exception e
-           (reset! !system nil)
-           (throw e)))))))
+        (try
+          (let [{:keys [dep-order components] :as started-system} (start-system deps opts)]
+            (doseq [[dep {:keys [value]}] components]
+              (alter-var-root dep (constantly value)))
+            (reset! !system started-system)
+            (set dep-order))
+          (catch Exception e
+            (reset! !system nil)
+            (throw e)))))))
 
 (defn stop! []
   (let [system @!system]
