@@ -13,13 +13,23 @@
              (->StartedComponent value (fn []))))
   ([value stop!] (->StartedComponent value stop!)))
 
-(defn- parse-component-opts [[maybe-opts & body]]
+(defn- resolve-dep [ns dep]
+  (cond
+    (var? dep) dep
+    (symbol? dep) (or (ns-resolve ns dep)
+                      (throw (ex-info "Could not resolve dependency" {:dep dep})))))
+
+(defn- parse-component-opts [[maybe-opts & body] {:keys [ns]}]
   (if (and (map? maybe-opts) (seq body))
-    (merge {:body body} (select-keys maybe-opts #{:bounce/deps :bounce/args}))
+    (merge {:body body
+            :bounce/deps (->> (:bounce/deps maybe-opts)
+                              (into #{} (map (fn [dep]
+                                               (resolve-dep ns dep)))))}
+           (select-keys maybe-opts #{:bounce/args}))
     {:body (cons maybe-opts body)}))
 
 (defmacro defcomponent [sym & body]
-  (let [{:keys [bounce/deps bounce/args body]} (parse-component-opts body)]
+  (let [{:keys [bounce/deps bounce/args body]} (parse-component-opts body {:ns *ns*})]
     `(doto (def ~(-> sym (with-meta {:dynamic true})) nil)
        (alter-meta! merge {:bounce/deps '~deps
                            :bounce/component (fn ~(symbol (str "start-" (name sym))) [~@args]
@@ -45,20 +55,12 @@
 (defmacro with-component [[binding component] & body]
   `(with-component* ~component (fn [~binding] ~@body)))
 
-(defn- resolve-dep [ns dep]
-  (cond
-    (var? dep) dep
-    (symbol? dep) (or (do
-                        (some-> (namespace dep) symbol require)
-                        (ns-resolve ns dep))
-                      (throw (ex-info "Could not resolve dependency" {:dep dep})))))
-
 (defn order-deps [deps]
   (loop [[dep & more-deps] (seq deps)
          seen #{}
          g (deps/graph)]
     (if dep
-      (let [upstream-deps (map #(resolve-dep (:ns (meta dep)) %) (:bounce/deps (meta dep)))]
+      (let [upstream-deps (:bounce/deps (meta dep))]
         (recur (distinct (remove seen (concat more-deps upstream-deps)))
                (conj seen dep)
                (reduce (fn [g upstream-dep]
@@ -67,23 +69,11 @@
                        upstream-deps)))
       (remove #{:system} (deps/topo-sort g)))))
 
-(defn- normalise-deps+args [deps args]
-  (reduce (fn [[deps args] dep-or-dep+args]
-            (let [[dep dep-args] (if (vector? dep-or-dep+args)
-                                   [(first dep-or-dep+args) (rest dep-or-dep+args)]
-                                   [dep-or-dep+args nil])
-                  dep (resolve-dep (symbol (namespace dep)) dep)]
-              [(conj deps dep) (merge {dep dep-args} args)]))
-
-          [#{} (->> args (into {} (map (fn [[dep args]]
-                                         [(resolve-dep (symbol (namespace dep)) dep) args]))))]
-          deps))
-
 (defn start-system
   ([deps] (start-system deps {}))
   ([deps {:bounce/keys [args overrides]}]
-   (let [[deps args] (normalise-deps+args deps args)
-         dep-order (order-deps deps)
+   (let [dep-order (order-deps deps)
+
          start-fn (reduce (fn [f dep]
                             (fn [system]
                               (let [component-fn (or (get overrides dep)
@@ -138,18 +128,22 @@
   ([deps {:bounce/keys [args overrides] :as opts}]
    (reset! !last-opts [deps opts])
 
-   (if-not (compare-and-set! !system nil :starting)
-     (throw (ex-info "System is already starting/started" {:system @!system}))
+   (let [deps (->> deps
+                   (into #{} (keep (fn [dep]
+                                     (ns-resolve (doto (symbol (namespace dep)) require) dep)))))]
 
-     (try
-       (let [{:keys [dep-order components] :as started-system} (start-system deps opts)]
-         (doseq [[dep {:keys [value]}] components]
-           (alter-var-root dep (constantly value)))
-         (reset! !system started-system)
-         (set dep-order))
-       (catch Exception e
-         (reset! !system nil)
-         (throw e))))))
+     (if-not (compare-and-set! !system nil :starting)
+       (throw (ex-info "System is already starting/started" {:system @!system}))
+
+       (try
+         (let [{:keys [dep-order components] :as started-system} (start-system deps opts)]
+           (doseq [[dep {:keys [value]}] components]
+             (alter-var-root dep (constantly value)))
+           (reset! !system started-system)
+           (set dep-order))
+         (catch Exception e
+           (reset! !system nil)
+           (throw e)))))))
 
 (defn stop! []
   (let [system @!system]
