@@ -104,17 +104,17 @@
     (stop-fn {})
     (set dep-order)))
 
-(defn with-system* [system f]
-  (with-bindings (->> (:components system)
+(defn with-system* [started-system f]
+  (with-bindings (->> (:components started-system)
                       (into {} (map (fn [[component-var {:keys [value]}]]
                                       [component-var value]))))
     (try
       (f)
       (finally
-        (stop-system system)))))
+        (stop-system started-system)))))
 
-(defmacro with-system [system & body]
-  `(with-system* ~system (fn [] ~@body)))
+(defmacro with-system [started-system & body]
+  `(with-system* ~started-system (fn [] ~@body)))
 
 (def ^:private !opts (atom nil))
 
