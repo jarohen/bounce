@@ -1,40 +1,36 @@
-Bounce is a lightweight library for structuring dependencies in a
-functional style, for Clojure and ClojureScript.
+Bounce is a lightweight library for structuring dependencies in a functional style.
 
 ** Dependency
 #+BEGIN_SRC clojure
-  [jarohen/bounce "0.0.1-alpha2"]
+  [jarohen/bounce "0.0.1-rc1"]
 #+END_SRC
 
 There will likely be many breaking changes until 0.1.0!
 
 Other resources for getting started with Bounce include:
 
-- ~lein new bounce-webapp <your-project>~ - a lein template with a
-  simple CLJS app.
+- ~lein new splat <your-project>~ - a lein template with a simple CLJS app.
 - Any of the projects in the =examples= directory.
-- There are also a number of common modules (e.g. JDBC pool, web
-  server, etc) in the =modules= directory.
 
-This README starts with an extensive discussion of '/why?/' - if
-you're looking for the '/how?/', please [[#concepts-in-bounce][skip ahead]].
+This README starts with an extensive discussion of '/why?/' - if you're looking
+for the '/how?/', please [[#concepts-in-bounce][skip ahead]].
 
 * Contents                                                        :TOC_1_gh:
- - [[#the-big-disclaimer™][The Big Disclaimer™]]
- - [[#what-is-bounce-looking-to-achieve][What is Bounce looking to achieve?]]
- - [[#concepts-in-bounce][Concepts in Bounce]]
- - [[#a-bounce-application][A Bounce application]]
- - [[#testing-bounce-systems][Testing Bounce systems]]
- - [[#thanks][Thanks!]]
- - [[#feedback-want-to-contribute][Feedback? Want to contribute?]]
- - [[#licence][LICENCE]]
+- [[#the-big-disclaimer][The Big Disclaimer™]]
+- [[#what-is-bounce-looking-to-achieve][What is Bounce looking to achieve?]]
+- [[#concepts-in-bounce][Concepts in Bounce]]
+- [[#a-bounce-application][A Bounce application]]
+- [[#testing-bounce-systems][Testing Bounce systems]]
+- [[#thanks][Thanks!]]
+- [[#feedback-want-to-contribute][Feedback? Want to contribute?]]
+- [[#licence][LICENCE]]
 
 * The Big Disclaimer™
 
 #+BEGIN_QUOTE
-Bounce /is/ opinionated. It does, /explicitly and intentionally/,
-make tradeoffs which may not be suitable for all tastes/situations, in
-order to take advantage of certain pragmatic benefits.
+Bounce /is/ opinionated. It does, /explicitly and intentionally/, make tradeoffs
+which may not be suitable for all tastes/situations, in order to take advantage
+of certain pragmatic benefits.
 #+END_QUOTE
 
 This is, of course, probably true of most libraries!
@@ -42,28 +38,25 @@ This is, of course, probably true of most libraries!
 *Spoiler alert*: here are those tradeoffs:
 
 - In particular, Bounce sacrifices explicit referential transparency
-  (without loss of the benefits of referential
-  transparency). Functions /do/ make use of a context that hasn't been
-  passed in as an explicit parameter. This isn't to say that we lose
-  the testability benefits of referential transparency, though - we
-  can alter this context easily for testing porpoises.
+  (without loss of the benefits of referential transparency). Functions /do/
+  make use of a context that hasn't been passed in as an explicit parameter.
+  This isn't to say that we lose the testability benefits of referential
+  transparency, though - we can alter this context easily for testing porpoises.
 - Bounce does rely on a global variable. /What? Did he really just say
   that? In a functional language? How dare he?!/ Yes :)
 
-  Generally speaking, there's only one 'System' running at a time in
-  an application, so let's not pretend we 'might need more than one'
-  (unless we genuinely do), and reap the benefits of making such an
-  assertion.
+  Generally speaking, there's only one 'System' running at a time in an
+  application, so let's not pretend we 'might need more than one' (unless we
+  genuinely do), and reap the benefits of making such an assertion.
 
-  Having said that, Bounce does make it easy to test code against a
-  different System - so, again, we don't lose the testability
-  benefits.
+  Having said that, Bounce does make it easy to test code against a different
+  System - so, again, we don't lose the testability benefits.
 
-However, this doesn't mean that we have to, nor should, abandon our
-'Good Functional Programming Practices'™. Pure, referentially
-transparent functions /are/ easier to test, so we should still split
-functions (where possible) into pure functions and side-effecting
-functions, with the aim of minimising the latter.
+However, this doesn't mean that we have to, nor should, abandon our 'Good
+Functional Programming Practices'™. Pure, referentially transparent functions
+/are/ easier to test, so we should still split functions (where possible) into
+pure functions and side-effecting functions, with the aim of minimising the
+latter.
 
 With those design decisions in mind, let's continue!
 
@@ -131,41 +124,38 @@ implementation details of its callees.
 
 ** So what do we really want?
 
-We quite like a couple of properties of global variables -
-particularly:
+We quite like a couple of properties of global variables - particularly:
 
 - We can refer to them from /anywhere/, without needing to pass a
   reference through the call stack.
 - It's easy to trace their usages
-- If you have /one/, developers know where to go to get a
-  configuration value, or access to a resource.
+- If you have /one/, developers know where to go to get a configuration
+  value, or access to a resource.
 
 But their tradeoffs are well-known, particularly:
 
 - Multiple threads having concurrent access to mutable state causes
-  trouble. (Clojure's core concurrency primitives mitigate this, to an
-  extent, but we'd still like to avoid it)
+  trouble. (Clojure's core concurrency primitives mitigate this, to an extent,
+  but we'd still like to avoid it)
 - Not being able to alter their value for individual function calls
   makes testing harder.
 
-Ideally, we'd like an immutable 'context' to be passed /implicitly/
-from caller to callee. Each callee could look up its dependencies in
-the context, without troubling its caller by asking for their
-dependencies to be explicitly passed as function parameters.
+Ideally, we'd like an immutable 'context' to be passed /implicitly/ from caller
+to callee. Each callee could look up its dependencies in the context, without
+troubling its caller by asking for their dependencies to be explicitly passed as
+function parameters.
 
-We'd also like to be able to alter the context, albeit for the scope
-of one function call.
+We'd also like to be able to alter the context, albeit for the scope of one
+function call.
 
 This sounds remarkably like dynamic scope?
 
-Dynamic scope, though, has its own tradeoffs - it doesn't play
-particularly well with multiple threads, especially if those threads
-aren't in the caller's control (e.g. in a web server).
+Dynamic scope, though, has its own tradeoffs - it doesn't play particularly well
+with multiple threads, especially if those threads aren't in the caller's
+control (e.g. in a web server).
 
-
-The idea behind Bounce, therefore, is that by combining the two, we
-can take advantage of their relative benefits, and reduce/remove their
-tradeoffs.
+The idea behind Bounce, therefore, is that by combining the two, we can take
+advantage of their relative benefits, and reduce/remove their tradeoffs.
 
 * Concepts in Bounce
 
@@ -173,137 +163,133 @@ There are two main concepts in Bounce - Components and Systems.
 
 ** Components
 
-Components in Bounce are any values that can be 'closed'. Examples
-here are resources that can be released, servers that can be shut
-down, or database pools that can be closed.
+Components in Bounce are any values that can be 'closed'. Examples here are
+resources that can be released, servers that can be shut down, or database pools
+that can be closed.
 
-Components are simply pairs consisting of a value, and a function that
-will 'close' that value. They're constructed using
-~bounce.core/->component~, a function taking either 1 or 2 args - the
-value and, optionally, the function to close that value.
+Components are simply pairs consisting of a value, and a function that will
+'close' that value. They're defined using ~bounce.system/defcomponent~:
 
 #+BEGIN_SRC clojure
-  (require '[bounce.core :as bc])
+  (ns myapp.db
+    (:require [bounce.system :as b]
+              [nomad.config :as n]))
 
-  (defn open-db-pool! [db-config]
+  (n/defconfig db-config
+    ...)
+
+  (b/defcomponent db-pool
     (let [db-pool (start-db-pool! db-config)]
-      (bc/->component db-pool
-                      (fn []
-                        (stop-db-pool! db-pool)))))
+      (-> db-pool
+          (b/with-stop (stop-db-pool! db-pool)))))
 #+END_SRC
 
-(There is, of course, a predefined Bounce component that does exactly
-this, in the Bounce [[https://github.com/jarohen/bounce/tree/master/modules/jdbc-pool][JDBC pool module]].)
-
-Notably, components in Bounce are always 'started' - there's no
-uninitialised state.
+(I'd also naturally recommend taking a look at [[https://github.com/jarohen/nomad][Nomad]], to configure your
+components. Well, I would, wouldn't I?!)
 
 ** Systems
 
-Systems, in Bounce, are a composition of components. They're easier to
-read in code than they are to describe in English, so here goes:
+Systems, in Bounce, are a composition of components. We define dependencies
+between components using ~{:bounce/deps #{...}}~ metadata on the ~defcomponent~
 
 #+BEGIN_SRC clojure
-  (defn make-my-system []
-    (bc/make-system {:config (fn []
-                               (bc/->component (read-config ...)))
+  (ns myapp.web
+    (:require [aleph.http :as http]
+              [bounce.system :as b]
+              [clojure.java.jdbc :as jdbc]
+              [myapp.db :as db]
+              [nomad.config :as n]
+              [ring.util.response :as resp]))
 
-                     :db-conn (-> (fn []
-                                    (let [opened-pool (open-pool! {:db-config (bc/ask :config :db)})]
-                                      (bc/->component opened-pool
-                                                      (fn []
-                                                        (close-pool! opened-pool)))))
+  (n/defconfig web-server-config
+    ...)
 
-                                  (bc/using #{:config}))
+  (defn make-handler []
+    (fn [req]
+      (let [db-resp (jdbc/query db/db-pool [...] ...)]
+        (resp/response ...))))
 
-                     :web-server (-> (fn []
-                                       (let [opened-server (open-web-server! {:handler (make-handler)
-                                                                              :port (bc/ask :config :web-server :port)})]
-                                         (bc/->component opened-server
-                                                         (fn []
-                                                           (close-web-server! opened-server)))))
+  (b/defcomponent web-server {:bounce/deps #{db/db-pool}}
+    (let [{:keys [port]} web-server-config
+          opened-server (http/start-server (make-handler) {:port port})]
+      (-> opened-server
+          (b/with-stop (.close opened-server)))))
 
-                                     (bc/using #{:config :db-conn}))}))
 #+END_SRC
 
 Points to note:
-- The system is a map from a component key to a 0-arg function
-  returning a Component
-- We can declare dependencies by wrapping that function in a call to
-  ~bc/using~, passing it a set of dependency keys.
-- We can ~bc/ask~ for dependencies within the Component
-  function. ~bc/ask~ also accepts extra varargs - if the component is
-  a nested map (like ~:config~, here), this behaves similarly to
-  ~get-in~.
-- We can ~bc/ask~ for dependencies further down the call-stack, too,
-  without changing any of the call-stack above.
+- We can declare dependencies by adding an opts map to the ~defcomponent~ call
+- Once declared, we can refer to other dependencies like any other var - including
+  in other functions called from the component
 - If the system errors, for whatever reason, any Components that were
   started before the error will be stopped.
-- If a Component's required dependency isn't declared, but is ~ask~-ed
-  for, an error's thrown immediately with details of the dependency -
-  it fails fast.
-- ~bc/make-system~ returns a System value. You likely won't use the
+- ~b/start-system~ returns a System value. You likely won't use the
   result directly, though.
 
-Systems, once created, can be stopped using the ~bc/with-system~ function:
+You only need to create components for values that need to be stopped -
+otherwise, I'd recommend using normal dynamic vars for side-effects:
 
 #+BEGIN_SRC clojure
-  (bc/with-system (make-my-system)
-    (fn []
-      ;; after this function exits, whatever the result, the system will
-      ;; be closed
-      ))
+  (defn ^:dynamic get-user-from-db [user-id]
+    (jdbc/query db/db-pool [...] ...))
+#+END_SRC
+
+I can then mock this side-effect out in testing using Clojure's normal `binding`
+macro. Particularly, this obviates the need for a ~(defprotocol UserRepository ...)~.
+
+Systems, once created, can be stopped using the ~b/with-system~ function.
+
+#+BEGIN_SRC clojure
+  ;; at your REPL
+
+  (b/with-system (b/start-system #{#'myapp.web/web-server})
+    ;; after this block exits, whatever the result, the system will
+    ;; be closed
+
+    (prn "System started!" {:web web-server
+                            :db db/db-pool}))
 #+END_SRC
 
 * A Bounce application
 
-Most of the time, though, we'll want to start a system, and leave it
-running. Through development, we'll also want to stop a system, reload
-any code that's changed, and start it again. We do this by giving
-Bounce a function that, when called, will create and start a system:
+Most of the time, though, we'll want to start a system, and leave it running.
+Through development, we'll also want to stop a system, reload any code that's
+changed, and start it again. We do this by giving Bounce a set of 'root'
+dependencies:
 
 #+BEGIN_SRC clojure
-  (bc/set-system-fn! 'myapp.main/make-my-system)
-
-  ;; alternatively, (and probably more likely), define a function that
-  ;; returns the map, then call 'set-system-map-fn!':
-
-  (defn my-system-map []
-    {:config ...
-     :db-conn ...
-     :web-server ...})
-
-  (bc/set-system-map-fn! 'myapp.main/my-system-map)
+  (b/set-opts! #{'myapp.web/web-server})
 #+END_SRC
 
-We can then start, stop and reload the system using Bounce's REPL
-functions:
+We can then start, stop and reload the system using Bounce's REPL functions:
 
 #+BEGIN_SRC clojure
-  (bc/start!)
+  (b/start!)
 
-  (bc/stop!)
-
-  (bc/reload!)
-
-  ;; 'reload!' optionally takes a map of parameters
-  (bc/reload! {:refresh? true, :refresh-all? false})
+  (b/stop!)
 #+END_SRC
+
+You can integrate Bounce with a clojure.tools.namespace reload pattern using
+~b/stop!~ and ~b/start!~ as your stop/start hooks. If you're using CIDER, you
+can set them as your `cider-ns-refresh-{before,after}-fn` hooks.
 
 My application ~-main~ functions usually look like this:
 
 #+BEGIN_SRC clojure
   (ns myapp.main
-    (:require [bounce.core :as bc]))
-
-  (defn make-system-map []
-    {...})
+    (:require [bounce.system :as b]))
 
   (defn -main [& args]
-    (bc/set-system-map-fn! 'myapp.main/make-system-map)
+    ;; ... start embedded nREPL
 
-    (bc/start!))
+    (b/set-opts! #{'myapp.web/web-server})
+
+    (b/start!))
 #+END_SRC
+
+Bounce will require all of the namespaces required for your root dependencies
+when it starts - which means that, if the namespaces don't compile (during dev,
+for example) you can still have a started REPL to fix the issues.
 
 * Testing Bounce systems
 
@@ -314,12 +300,10 @@ First, I never underestimate how useful it is to run ad-hoc forms at
 the REPL - in fact, this is a large proportion of my coding time (when
 I'm not writing READMEs, at least!). Bounce makes this easy:
 
-- ~(bounce.core/snapshot)~ gives you the current state of the system
-  (particularly useful when you're in a CLJS REPL, looking at the
-  state of your webapp)
-- ~(bounce.core/ask :component-key)~ gives you the value of a
-  component within the system. You knew that, of course, from
-  earlier - but here's a reminder that it's useful at the REPL, too.
+- You can access the currently started components by referring directly
+  to their vars
+- Those vars are marked ~:dynamic~, so you can mock them out easily at the REPL
+  using Clojure's standard ~:binding~ macro.
 - ~(your-function args...)~ - because there's no 'context' parameter,
   you can run your functions as intended, without worrying about
   cobbling together a context map. (Make sure you've got a running
@@ -329,97 +313,36 @@ Bounce, though, also provides a number of utilities that make testing
 easier:
 
 #+BEGIN_SRC clojure
-    (require '[bounce.core :as bc]
-             '[clojure.test :as t])
+  (ns myapp.app-test
+    (:require [myapp.app :as app]
+              [bounce.system :as b]
+              [clojure.test :as t]))
 
-    ;; an sample component that we'll use throughout these examples
+  ;; an sample component that we'll use throughout these examples
 
-    (defn open-foo-component [opts]
-      (let [started-component (start-me! opts)]
-        (bc/->component started-component
-                        (fn []
-                          (stop-me! started-component)))))
+  (b/defcomponent foo-component {:bounce/deps #{db/db-pool}}
+    (let [started-component (reify EmailProvider
+                              (send-email! [_ email]
+                                ;; the real implementation
+                                ))]
+      (-> started-component
+          (b/with-stop (stop-me! started-component)))))
 
-    ;; a sample main application system map - we'll adapt this (for testing) later
+  ;; remember 'with-system'? this is particularly useful for testing:
 
-    (defn make-system-map []
-      ;; your main application system map
-      {:config ...
-       :db-conn ...
-       :queue-processor ...
-       :web-server ...
-       :foo-component (fn []
-                        (open-foo-component))})
+  (b/with-system (b/start-system #{#'foo-component})
+    (let [foo-user-id 123]
+      (t/is (= :expected-mock-result
+               (get-user-from-db foo-user-id)))))
 
+  ;; sometimes, you want to mostly use the current system, with a minor
+  ;; alteration - here's `:bounce/overrides`
 
+  (b/with-system (b/start-system #{#'foo-component}
+                                 {:bounce/overrides {#'db/db-pool the-mock}})
 
-
-    ;; 'with-component' is a good way to test individual components,
-    ;; ensuring they're stopped when you're done.
-
-    (bc/with-component (open-foo-component ...)
-      (fn [component-value]
-        ;; test me!
-        ))
-
-
-    ;; don't forget about 'with-system'! this is particularly useful for
-    ;; testing:
-
-    (bc/with-system (bc/make-system {:db-conn (fn []
-                                                (let [mock-conn (open-mock-conn! ...)]
-                                                  (bc/->component mock-conn
-                                                                  (fn []
-                                                                    (close-mock-conn! mock-conn)))))
-                                     ...})
-      (fn []
-        (let [foo-user-id 123]
-          (t/is (= :expected-mock-result
-                   (get-user-from-db foo-user-id))))))
-
-    ;; you can also pass a map of values, if you don't want any of them to be closed:
-
-    (bc/with-system {:config {:a 1, :b 2}
-                     :mock-something (reify MyProtocol
-                                       ...)}
-      (fn []
-        (let [foo-user-id 123]
-          (t/is (= :expected-mock-result
-                   (get-user-from-db foo-user-id))))))
-
-
-    ;; sometimes, you want to mostly use the current system, with a minor
-    ;; alteration - here's 'with-varied-system':
-
-    (bc/with-varied-system #(assoc % :mock-something (reify MyProtocol
-                                                       ...))
-      (fn []
-        ;; test me!
-        ))
-
-
-    ;; even 'make-system' can be called with an optional ':targets'
-    ;; option, to run a subset of your main system:
-
-    (bc/with-system (bc/make-system (make-system-map) {:targets #{:config :db-conn}})
-      (fn []
-        ;; test code which only needs :config and :db-conn here - no need
-        ;; to start the web-server/queue-processor, etc
-        ))
-
-
-    ;; you can adapt a component function within a system-map, using
-    ;; 'fmap-component-fn' - this allows you to alter/use/wrap the
-    ;; component value before it's put into the system map:
-
-    (bc/with-system (bc/make-system (-> (make-system-map)
-                                        (update :foo-component fmap-component-fn (fn [started-foo-component]
-                                                                                   (-> started-foo-component
-                                                                                       (wrap-foo ...)))))
-                                    {:targets #{:foo-component}})
-      (fn []
-        (bc/ask :foo-component) ;; => now returns the wrapped value
-        ))
+    ;; test me!
+    )
 #+END_SRC
 
 * Thanks!
@@ -450,7 +373,7 @@ helpful pointers :)
 
 * LICENCE
 
-Copyright © 2015 James Henderson
+Copyright © 2015-2018 James Henderson
 
 Bounce, and all modules within this repo, are distributed under the
 Eclipse Public License - either version 1.0 or (at your option) any
