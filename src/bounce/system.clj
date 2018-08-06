@@ -42,19 +42,6 @@
   (let [{:keys [value stop!]} (->started-component component)]
     (->started-component (f value) stop!)))
 
-(defn with-component* [component f]
-  (let [{:keys [value stop!]} (->started-component component)]
-    (try
-      (f value)
-      (finally
-        (try
-          (stop!)
-          (catch Exception e
-            (.printStackTrace e)))))))
-
-(defmacro with-component [[binding component] & body]
-  `(with-component* ~component (fn [~binding] ~@body)))
-
 (defn order-deps [deps]
   (loop [[dep & more-deps] (seq deps)
          seen #{}
