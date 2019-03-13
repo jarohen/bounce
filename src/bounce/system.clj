@@ -29,11 +29,14 @@
     {:body (cons maybe-opts body)}))
 
 (defmacro defcomponent [sym & body]
-  (let [{:keys [bounce/deps bounce/args body]} (parse-component-opts body {:ns *ns*})]
-    `(doto (def ~(-> sym (with-meta {:dynamic true})) nil)
-       (alter-meta! merge {:bounce/deps '~deps
-                           :bounce/component (fn ~(symbol (str "start-" (name sym))) [~@args]
-                                               (->started-component (do ~@body)))}))))
+  (let [{:keys [bounce/deps bounce/args body]} (parse-component-opts body {:ns *ns*})
+        sym (-> sym (with-meta {:dynamic true}))]
+    `(do
+       (defonce ~sym nil)
+       (doto (var ~sym)
+         (alter-meta! merge {:bounce/deps '~deps
+                             :bounce/component (fn ~(symbol (str "start-" (name sym))) [~@args]
+                                                 (->started-component (do ~@body)))})))))
 
 (defmacro with-stop [value & body]
   `(->started-component ~value (fn ~'stop [] ~@body)))
