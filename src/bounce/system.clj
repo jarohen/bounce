@@ -25,17 +25,17 @@
             :bounce/deps (->> (:bounce/deps maybe-opts)
                               (into #{} (map (fn [dep]
                                                (resolve-dep ns dep)))))}
-           (select-keys maybe-opts #{:bounce/args}))
+           (select-keys maybe-opts #{:bounce/params}))
     {:body (cons maybe-opts body)}))
 
 (defmacro defcomponent [sym & body]
-  (let [{:keys [bounce/deps bounce/args body]} (parse-component-opts body {:ns *ns*})
+  (let [{:keys [bounce/deps bounce/params body]} (parse-component-opts body {:ns *ns*})
         sym (-> sym (with-meta {:dynamic true}))]
     `(do
        (defonce ~sym nil)
        (doto (var ~sym)
          (alter-meta! merge {:bounce/deps '~deps
-                             :bounce/component (fn ~(symbol (str "start-" (name sym))) [~@args]
+                             :bounce/component (fn ~(symbol (str "start-" (name sym))) [~(or params `_#)]
                                                  (->started-component (do ~@body)))})))))
 
 (defmacro with-stop [value & body]
@@ -61,14 +61,14 @@
 
 (defn start-system
   ([deps] (start-system deps {}))
-  ([deps {:bounce/keys [args overrides]}]
+  ([deps {:bounce/keys [params overrides]}]
    (let [dep-order (order-deps deps)
 
          start-fn (reduce (fn [f dep]
                             (fn [system]
                               (let [component-fn (or (get overrides dep)
                                                      (:bounce/component (meta dep)))
-                                    started-component (->started-component (apply component-fn (get args dep)))]
+                                    started-component (->started-component (component-fn (get params dep)))]
                                 (with-bindings {dep (:value started-component)}
                                   (try
                                     (f (assoc system dep started-component))
